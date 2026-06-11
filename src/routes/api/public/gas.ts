@@ -1,7 +1,43 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const FOLDER_ID = "17QN_wUJlISQNbT3a8Wr-9bcS-aGi04Er";
+const FOLDER_NAME = "FSD Documents";
 const GATEWAY = "https://connector-gateway.lovable.dev/google_drive";
+
+let cachedFolderId: string | null = null;
+async function getOrCreateFolderId(lovableKey: string, driveKey: string): Promise<string | null> {
+  if (cachedFolderId) return cachedFolderId;
+  const headers = {
+    Authorization: `Bearer ${lovableKey}`,
+    "X-Connection-Api-Key": driveKey,
+  };
+  const q = encodeURIComponent(
+    `name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+  );
+  const findRes = await fetch(
+    `${GATEWAY}/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=1`,
+    { headers },
+  );
+  if (findRes.ok) {
+    const j = (await findRes.json()) as { files?: Array<{ id: string }> };
+    if (j.files && j.files.length > 0) {
+      cachedFolderId = j.files[0].id;
+      return cachedFolderId;
+    }
+  }
+  const createRes = await fetch(`${GATEWAY}/drive/v3/files?fields=id`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: FOLDER_NAME,
+      mimeType: "application/vnd.google-apps.folder",
+    }),
+  });
+  if (!createRes.ok) return null;
+  const created = (await createRes.json()) as { id: string };
+  cachedFolderId = created.id;
+  return cachedFolderId;
+}
+
 
 function rowToDoc(r: Record<string, unknown>) {
   return {
