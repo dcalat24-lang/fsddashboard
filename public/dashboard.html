@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FSD DASHBOARD</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- SPINNER -->
+<div class="spin-ov" id="spinOv">
+  <div class="spin"></div>
+  <div class="spin-tx" id="spinTx">Loading...</div>
+</div>
+
+<!-- ═══ LOGIN PAGE ═══ -->
+<div id="LP">
+  <div class="lcard">
+    <div class="llogo">
+      <div class="lico"><i class="fas fa-plane"></i></div>
+      <h1>FSD DASHBOARD</h1>
+      <p>Finance &amp; Strategy Division — Document Portal</p>
+    </div>
+    <div class="lfg">
+      <label>Username</label>
+      <div class="iw"><i class="fas fa-user ico"></i><input class="fc" id="lu" placeholder="Enter username" value="admin"></div>
+    </div>
+    <div class="lfg">
+      <label>Password</label>
+      <div class="iw"><i class="fas fa-lock ico"></i><input type="password" class="fc" id="lp" placeholder="Enter password" value="1234"></div>
+    </div>
+    <button class="btn-login" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Sign In</button>
+    <div class="lhint">Demo: <b>admin / 1234</b> &nbsp;·&nbsp; <b>staff / 1234</b></div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="AP">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sb">
+    <div class="sb-strip"></div>
+    <div class="sb-hd">
+      <div class="sb-logo">
+        <div class="sb-icon"><i class="fas fa-plane"></i></div>
+        <div>
+          <div class="sb-nm">FSD DASHBOARD</div>
+          <div class="sb-sub">Document Portal</div>
+        </div>
+      </div>
+    </div>
+    <div class="sb-user">
+      <div class="sb-ava" id="sbAva">A</div>
+      <div>
+        <div class="sb-un" id="sbName">Admin</div>
+        <div class="sb-role" id="sbRole">Admin</div>
+      </div>
+    </div>
+    <nav class="sb-nav" id="sbNav"></nav>
+    <div class="sb-ft">
+      <button class="btn-lo" onclick="doLogout()">
+        <i class="fas fa-sign-out-alt"></i> Sign Out
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="mainW">
+    <div class="topbar">
+      <button class="t-tog" onclick="toggleSb()"><i class="fas fa-bars"></i></button>
+      <div class="t-title" id="tTitle">Dashboard</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px;color:var(--g400)" id="tDate"></span>
+        <div class="t-ava" id="tAva">A</div>
+      </div>
+    </div>
+    <div class="content" id="contentArea">
+      <!-- Dynamic pages injected by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- User Modal -->
+<div class="mo" id="moUser">
+  <div class="md">
+    <div class="mh">
+      <h3><i class="fas fa-user-cog" style="color:var(--p)"></i><span id="moUT">Add User</span></h3>
+      <button class="mc" onclick="closeMo('moUser')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb">
+      <div class="fr c2">
+        <div class="ff"><label>Username *</label><input id="fu" placeholder="username"></div>
+        <div class="ff"><label>Password *</label><input type="password" id="fp" placeholder="password"></div>
+      </div>
+      <div class="fr c2">
+        <div class="ff"><label>Full Name *</label><input id="fn" placeholder="First Last"></div>
+        <div class="ff"><label>Department *</label><input id="fd" placeholder="Department"></div>
+      </div>
+      <div class="fr">
+        <div class="ff"><label>Role</label>
+          <select id="frl"><option value="staff">Staff</option><option value="admin">Admin</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ol" onclick="closeMo('moUser')">Cancel</button>
+      <button class="btn btn-p" onclick="saveUser()"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Document Modal -->
+<div class="mo" id="moDoc">
+  <div class="md" style="max-width:620px">
+    <div class="mh">
+      <h3><i class="fas fa-file-plus" style="color:var(--p)"></i><span id="moDT">Add Document</span></h3>
+      <button class="mc" onclick="closeMo('moDoc')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb">
+      <div class="fr c2">
+        <div class="ff"><label>DCAL No *</label><input id="dDcal" placeholder="DCAL-001"></div>
+        <div class="ff"><label>DCAL Date *</label><input type="date" id="dDcalD"></div>
+      </div>
+      <div class="fr c2">
+        <div class="ff"><label>FSD No *</label><input id="dFsd" placeholder="FSD-2568-001"></div>
+        <div class="ff"><label>FSD Date *</label><input type="date" id="dFsdD"></div>
+      </div>
+      <div class="fr c2">
+        <div class="ff"><label>Document No</label><input id="dDocN" placeholder="Doc number"></div>
+        <div class="ff"><label>Document Date</label><input type="date" id="dDocD"></div>
+      </div>
+      <div class="fr">
+        <div class="ff"><label>Subject *</label><input id="dSubj" placeholder="Document subject / title"></div>
+      </div>
+      <div class="fr">
+        <div class="ff"><label>Status</label>
+          <select id="dSt">
+            <option value="head">Head FSD</option>
+            <option value="pel">Pel</option>
+            <option value="ops">Ops</option>
+            <option value="air">Air</option>
+            <option value="dg">DG</option>
+            <option value="done">Completed</option>
+          </select>
+        </div>
+      </div>
+      <div class="ff" style="margin-top:6px">
+        <label>Attachments — PDF files saved to Google Drive</label>
+        <div class="dz" id="dz">
+          <div class="dzi"><i class="fas fa-cloud-upload-alt"></i></div>
+          <div class="dzt">Drag files here or click to browse</div>
+          <div class="dzs">PDF, Word, Excel · Max 50 MB per file</div>
+        </div>
+        <input type="file" id="dzIn" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.png" style="display:none">
+        <div class="fl" id="fList"></div>
+        <div id="uplProgress" style="display:none">
+          <div class="upl-progress"><div class="upl-bar" id="uplBar"></div></div>
+          <div style="font-size:11px;color:var(--g500);margin-top:4px" id="uplLabel">Uploading...</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;background:#E8F5E9;border:1px solid #A5D6A7;border-radius:var(--r);padding:10px 14px;color:#1B5E20">
+        <i class="fas fa-google-drive"></i> Files will be saved to Google Drive.
+        <a href="https://drive.google.com/drive/folders/17QN_wUJlISQNbT3a8Wr-9bcS-aGi04Er" target="_blank" style="color:var(--p);font-size:11px;margin-left:4px">Open Folder ↗</a>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ol" onclick="closeMo('moDoc')">Cancel</button>
+      <button class="btn btn-p" id="saveDocBtn" onclick="saveDoc()"><i class="fas fa-save"></i> Save Document</button>
+    </div>
+  </div>
+</div>
+
+<!-- Status Modal -->
+<div class="mo" id="moSt">
+  <div class="md" style="max-width:400px">
+    <div class="mh">
+      <h3><i class="fas fa-exchange-alt" style="color:var(--cy)"></i> Update Status</h3>
+      <button class="mc" onclick="closeMo('moSt')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb">
+      <div class="ff"><label>Status</label>
+        <select id="stSel">
+          <option value="head">Head FSD</option>
+          <option value="pel">Pel</option>
+          <option value="ops">Ops</option>
+          <option value="air">Air</option>
+          <option value="dg">DG</option>
+          <option value="done">Completed</option>
+        </select>
+      </div>
+      <div class="ff" style="margin-top:12px">
+        <label>Note</label>
+        <textarea id="stNote" placeholder="Additional notes..."></textarea>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ol" onclick="closeMo('moSt')">Cancel</button>
+      <button class="btn btn-c" onclick="saveStatus()"><i class="fas fa-check"></i> Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="mo" id="moDet">
+  <div class="md" style="max-width:720px">
+    <div class="mh">
+      <h3><i class="fas fa-file-search" style="color:var(--p)"></i> Document Detail</h3>
+      <button class="mc" onclick="closeMo('moDet')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb" id="detBody"></div>
+    <div class="mf">
+      <button class="btn btn-ol" onclick="closeMo('moDet')">Close</button>
+      <button class="btn btn-c" id="detStBtn"><i class="fas fa-exchange-alt"></i> Update Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF Viewer Modal -->
+<div class="mo" id="moPDF">
+  <div class="md" style="max-width:920px">
+    <div class="mh">
+      <h3><i class="fas fa-file-pdf" style="color:var(--rd)"></i><span id="pdfTit">PDF Preview</span></h3>
+      <button class="mc" onclick="closeMo('moPDF')"><i class="fas fa-times"></i></button>
+    </div>
+    <div><iframe id="pdfFrame" style="width:100%;height:72vh;border:none;display:block" src="about:blank"></iframe></div>
+    <div class="mf">
+      <button class="btn btn-ol" onclick="closeMo('moPDF')">Close</button>
+      <button class="btn btn-p" id="pdfOpenBtn"><i class="fas fa-external-link-alt"></i> Open in New Tab</button>
+    </div>
+  </div>
+</div>
+
+<!-- Insert Link Modal (Spreadsheet) -->
+<div class="mo" id="moLink">
+  <div class="md" style="max-width:420px">
+    <div class="mh">
+      <h3><i class="fas fa-link" style="color:var(--cy)"></i> Insert Link</h3>
+      <button class="mc" onclick="closeMo('moLink')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb">
+      <div class="ff"><label>Display Text</label><input id="lnkText" placeholder="Link label"></div>
+      <div class="ff" style="margin-top:12px"><label>URL *</label><input id="lnkUrl" placeholder="https://..."></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ol" onclick="closeMo('moLink')">Cancel</button>
+      <button class="btn btn-c" onclick="insertLink()"><i class="fas fa-link"></i> Insert</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Google Sheet Modal -->
+<div class="mo" id="moSheet">
+  <div class="md" style="max-width:540px">
+    <div class="mh">
+      <h3><i class="fas fa-table" style="color:var(--gn)"></i> Add Google Sheet Viewer</h3>
+      <button class="mc" onclick="closeMo('moSheet')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb">
+      <div class="ff"><label>Sheet Name *</label><input id="shN" placeholder="e.g. Budget Report 2568"></div>
+      <div class="ff" style="margin-top:12px">
+        <label>Google Sheet URL (any sharing link)</label>
+        <input id="shU" placeholder="https://docs.google.com/spreadsheets/d/...">
+      </div>
+      <div class="sh-info" style="margin-top:10px;font-size:11.5px">
+        <strong>How to get CSV URL:</strong> File → Share → <strong>Publish to web</strong> → Comma-separated values → Publish → Copy link.<br>
+        Or just paste any <code>/edit</code> or <code>/view</code> link and the system will convert it automatically.
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ol" onclick="closeMo('moSheet')">Cancel</button>
+      <button class="btn btn-g" onclick="addSheetConfirm()"><i class="fas fa-plus"></i> Add &amp; Load</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Filter Modal -->
+<div class="mo" id="moQuick">
+  <div class="md" style="max-width:780px">
+    <div class="mh">
+      <h3 id="quickTitle"><i class="fas fa-filter" style="color:var(--p)"></i> Documents</h3>
+      <button class="mc" onclick="closeMo('moQuick')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb">
+      <div class="tw">
+        <table>
+          <thead><tr><th>FSD No</th><th>Subject</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="quickTb"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-ol" onclick="closeMo('moQuick')">Close</button></div>
+  </div>
+</div>
+
+<!-- Add Custom Page Modal -->
+<div class="mo" id="moAddPage">
+  <div class="md" style="max-width:420px">
+    <div class="mh">
+      <h3><i class="fas fa-plus-circle" style="color:var(--gn)"></i> Add Custom Page</h3>
+      <button class="mc" onclick="closeMo('moAddPage')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb">
+      <div class="ff"><label>Page Name *</label><input id="cpName" placeholder="e.g. My Report"></div>
+      <div class="ff" style="margin-top:12px">
+        <label>Icon (Font Awesome class)</label>
+        <select id="cpIcon">
+          <option value="fa-file">📄 File</option>
+          <option value="fa-chart-bar">📊 Chart</option>
+          <option value="fa-list">📋 List</option>
+          <option value="fa-star">⭐ Star</option>
+          <option value="fa-cog">⚙️ Settings</option>
+          <option value="fa-link">🔗 Link</option>
+          <option value="fa-users">👥 Users</option>
+          <option value="fa-calendar">📅 Calendar</option>
+        </select>
+      </div>
+      <div class="ff" style="margin-top:12px">
+        <label>Page Type</label>
+        <select id="cpType">
+          <option value="editor">Rich Text Editor</option>
+          <option value="sheet">Spreadsheet (like Statistics FSD)</option>
+          <option value="iframe">Embed URL (iframe)</option>
+        </select>
+      </div>
+      <div class="ff" style="margin-top:12px" id="cpUrlField" style="display:none">
+        <label>URL to embed</label>
+        <input id="cpUrl" placeholder="https://...">
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ol" onclick="closeMo('moAddPage')">Cancel</button>
+      <button class="btn btn-g" onclick="addCustomPage()"><i class="fas fa-plus"></i> Create Page</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
