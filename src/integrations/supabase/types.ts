@@ -14,7 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      fsd_documents: {
+        Row: {
+          created_at: string
+          dcal_date: string | null
+          dcal_no: string | null
+          doc_date: string | null
+          doc_no: string | null
+          files: Json | null
+          fiscal: string | null
+          fsd_date: string | null
+          fsd_no: string | null
+          id: number
+          owner: string | null
+          status: string | null
+          status_note: string | null
+          subject: string | null
+          uid: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dcal_date?: string | null
+          dcal_no?: string | null
+          doc_date?: string | null
+          doc_no?: string | null
+          files?: Json | null
+          fiscal?: string | null
+          fsd_date?: string | null
+          fsd_no?: string | null
+          id?: number
+          owner?: string | null
+          status?: string | null
+          status_note?: string | null
+          subject?: string | null
+          uid?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dcal_date?: string | null
+          dcal_no?: string | null
+          doc_date?: string | null
+          doc_no?: string | null
+          files?: Json | null
+          fiscal?: string | null
+          fsd_date?: string | null
+          fsd_no?: string | null
+          id?: number
+          owner?: string | null
+          status?: string | null
+          status_note?: string | null
+          subject?: string | null
+          uid?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
