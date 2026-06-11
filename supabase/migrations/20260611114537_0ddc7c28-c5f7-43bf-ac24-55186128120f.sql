@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "public read fsd_documents" ON public.fsd_documents; REVOKE SELECT ON public.fsd_documents FROM anon; REVOKE SELECT ON public.fsd_documents FROM authenticated;
