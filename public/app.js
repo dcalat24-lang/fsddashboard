@@ -438,10 +438,11 @@ function viewFile(name,encUrl,type){
   const isPDF=(type==='pdf'||name.toLowerCase().endsWith('.pdf'));
   if(isPDF&&url&&url!=='#'){
     document.getElementById('pdfTit').textContent=name;
-    // Use Google Docs viewer for Drive links
+    // Convert Google Drive links to embeddable /preview form
     let src=url;
-    if(url.includes('drive.google.com')){
-      src='https://docs.google.com/viewer?url='+encodeURIComponent(url)+'&embedded=true';
+    const m=url.match(/\/file\/d\/([^/]+)/)||url.match(/[?&]id=([^&]+)/);
+    if(m){
+      src=`https://drive.google.com/file/d/${m[1]}/preview`;
     }
     document.getElementById('pdfFrame').src=src;
     document.getElementById('pdfOpenBtn').onclick=()=>window.open(url,'_blank');
@@ -454,6 +455,7 @@ function viewFile(name,encUrl,type){
     .then(r=>{if(r.isConfirmed&&url&&url!=='#')window.open(url,'_blank');});
   }
 }
+
 
 // ════════════════════════════════════════════════
 //  TRACKING
