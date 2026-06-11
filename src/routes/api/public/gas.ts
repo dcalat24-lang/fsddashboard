@@ -94,9 +94,11 @@ async function uploadToDrive(fileName: string, mimeType: string, b64: string) {
   if (!lovableKey || !driveKey) {
     return { error: "Drive connector not configured" };
   }
+  const folderId = await getOrCreateFolderId(lovableKey, driveKey);
+  if (!folderId) return { error: "Could not create or find Drive folder" };
   const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   const boundary = "fsd_boundary_" + Date.now();
-  const metadata = JSON.stringify({ name: fileName, parents: [FOLDER_ID] });
+  const metadata = JSON.stringify({ name: fileName, parents: [folderId] });
   const enc = new TextEncoder();
   const head = enc.encode(
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n` +
