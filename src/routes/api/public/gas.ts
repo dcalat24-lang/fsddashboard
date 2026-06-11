@@ -22,21 +22,22 @@ function rowToDoc(r: Record<string, unknown>) {
   };
 }
 
-function docToRow(d: Record<string, unknown>) {
+function docToRow(d: Record<string, unknown>): Record<string, unknown> {
+  const s = (v: unknown) => (v == null ? null : String(v));
   return {
-    dcal_no: d.dcalNo ?? null,
-    dcal_date: d.dcalDate ?? null,
-    fsd_no: d.fsdNo ?? null,
-    fsd_date: d.fsdDate ?? null,
-    doc_no: d.docNo ?? null,
-    doc_date: d.docDate ?? null,
-    subject: d.subject ?? null,
-    status: d.status ?? "head",
-    status_note: d.statusNote ?? "",
+    dcal_no: s(d.dcalNo),
+    dcal_date: s(d.dcalDate),
+    fsd_no: s(d.fsdNo),
+    fsd_date: s(d.fsdDate),
+    doc_no: s(d.docNo),
+    doc_date: s(d.docDate),
+    subject: s(d.subject),
+    status: s(d.status) ?? "head",
+    status_note: s(d.statusNote) ?? "",
     files: d.files ?? [],
-    uid: d.uid ?? null,
-    owner: d.owner ?? null,
-    fiscal: d.fiscal ?? null,
+    uid: d.uid == null ? null : Number(d.uid),
+    owner: s(d.owner),
+    fiscal: s(d.fiscal),
   };
 }
 
@@ -140,9 +141,12 @@ export const Route = createFileRoute("/api/public/gas")({
         if (action === "saveDocument") {
           const doc = (payload.doc ?? {}) as Record<string, unknown>;
           const row = docToRow(doc);
+          const table = supabaseAdmin.from("fsd_documents") as unknown as {
+            update: (v: Record<string, unknown>) => { eq: (c: string, v: unknown) => { select: () => { maybeSingle: () => Promise<{ data: { id: number } | null; error: { message: string } | null }> } } };
+            insert: (v: Record<string, unknown>) => { select: () => { single: () => Promise<{ data: { id: number }; error: { message: string } | null }> } };
+          };
           if (doc.id) {
-            const { data, error } = await supabaseAdmin
-              .from("fsd_documents")
+            const { data, error } = await table
               .update({ ...row, updated_at: new Date().toISOString() })
               .eq("id", Number(doc.id))
               .select()
@@ -150,11 +154,7 @@ export const Route = createFileRoute("/api/public/gas")({
             if (error) return json({ error: error.message }, 500);
             return json({ id: data?.id });
           }
-          const { data, error } = await supabaseAdmin
-            .from("fsd_documents")
-            .insert(row)
-            .select()
-            .single();
+          const { data, error } = await table.insert(row).select().single();
           if (error) return json({ error: error.message }, 500);
           return json({ id: data.id });
         }
