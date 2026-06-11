@@ -4,7 +4,7 @@
 
 // ─── CONFIG ──────────────────────────────────────
 // 👉 Replace with your Google Apps Script Web App URL after deployment
-const GAS_URL = '';
+const GAS_URL = '/api/public/gas';
 const FOLDER_ID  = '17QN_wUJlISQNbT3a8Wr-9bcS-aGi04Er';
 const SHEET_ID   = '1RfYWZ-u0pBtHe9IFiNso4ogK1uwpZjvx6_rit6ANjbo';
 const SHEET_NAME = 'sheet1';
