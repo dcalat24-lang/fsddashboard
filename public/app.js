@@ -1093,14 +1093,21 @@ function rmSheet(id){Swal.fire({title:'Remove Sheet?',icon:'warning',showCancelB
 //  FILE DRAG & DROP
 // ════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
+  // restore persisted state
+  loadUsers();loadSheets();loadCustom();
+  const sess=lsGet(LS.session);
+  if(sess&&sess.u){
+    const usr=DB.users.find(x=>x.u===sess.u);
+    if(usr){CU=usr;if(GAS_URL)loadFromSheet();else showApp();}
+  }
   const dz=document.getElementById('dz'),dzIn=document.getElementById('dzIn');
-  if(!dz||!dzIn)return;
-  dz.addEventListener('click',()=>dzIn.click());
-  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
-  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
-  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');addFiles(e.dataTransfer.files);});
-  dzIn.addEventListener('change',e=>{addFiles(e.target.files);e.target.value='';});
-  // close modals on overlay
+  if(dz&&dzIn){
+    dz.addEventListener('click',()=>dzIn.click());
+    dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+    dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+    dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');addFiles(e.dataTransfer.files);});
+    dzIn.addEventListener('change',e=>{addFiles(e.target.files);e.target.value='';});
+  }
   document.querySelectorAll('.mo').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeMo(o.id);}));
 });
 function addFiles(files){
