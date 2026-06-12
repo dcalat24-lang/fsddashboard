@@ -281,7 +281,7 @@ function cp_bold(id){document.execCommand('bold');}
 function cp_italic(id){document.execCommand('italic');}
 function cp_link(id){Swal.fire({title:'Insert Link',input:'url',inputPlaceholder:'https://...',confirmButtonText:'Insert',confirmButtonColor:'var(--p)'}).then(r=>{if(r.isConfirmed&&r.value)document.execCommand('createLink',false,r.value);});}
 function cp_save(id,html){const cp=customPages.find(x=>x.id===id);if(cp)cp.content=html;}
-function deleteCustomPage(id){customPages=customPages.filter(x=>x.id!==id);buildNav();goPage(CU.role==='admin'?'dash':'sdash');}
+function deleteCustomPage(id){customPages=customPages.filter(x=>x.id!==id);saveCustom();buildNav();goPage('dash');}
 
 // ════════════════════════════════════════════════
 //  DASHBOARD
