@@ -38,18 +38,17 @@ let adminMenuItems = [
   {id:'dash',     label:'Dashboard',          icon:'fa-tachometer-alt', visible:true},
   {id:'docs',     label:'All Documents',       icon:'fa-file-alt',       visible:true},
   {id:'track',    label:'Document Tracking',   icon:'fa-route',          visible:true},
-  {id:'stats',    label:'Statistics FSD',      icon:'fa-th',             visible:true},
   {id:'users',    label:'User Management',     icon:'fa-users-cog',      visible:true},
   {id:'customize',label:'Customize',           icon:'fa-sliders-h',      visible:true},
 ];
 let staffMenuItems = [
-  {id:'sdash',   label:'Dashboard',        icon:'fa-home',            visible:true},
-  {id:'mydocs',  label:'My Documents',     icon:'fa-folder-open',     visible:true},
-  {id:'mytrack', label:'Track My Docs',    icon:'fa-search-location', visible:true},
-  {id:'stats',   label:'Statistics FSD',   icon:'fa-th',              visible:true, readOnly:true},
-  {id:'profile', label:'Edit Profile',     icon:'fa-user-edit',       visible:true},
+  {id:'dash',    label:'Dashboard',         icon:'fa-tachometer-alt', visible:true},
+  {id:'docs',    label:'All Documents',     icon:'fa-file-alt',       visible:true},
+  {id:'track',   label:'Document Tracking', icon:'fa-route',          visible:true},
+  {id:'profile', label:'Edit Profile',      icon:'fa-user-edit',      visible:true},
 ];
 let customPages=[], cpNid=1;
+let currentPageKey=null, currentPageType=null; // for restore + auto refresh
 
 // ─── LOCAL DEMO DATA ──────────────────────────────
 const DB = {
@@ -59,11 +58,11 @@ const DB = {
     {id:3,u:'staff2',p:'1234',name:'Michael Ops', dept:'Strategy Division',role:'staff'},
   ],
   docs:[
-    {id:1,dcalNo:'DCAL-001',dcalDate:'2025-01-10',fsdNo:'FSD-2568-001',fsdDate:'2025-01-12',docNo:'DOC/001',docDate:'2025-01-08',subject:'IT System Development Budget Approval',status:'done',statusNote:'Approved',files:[{name:'IT_Budget.pdf',type:'pdf',url:'https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF2.pdf'}],uid:1,fiscal:'2568'},
-    {id:2,dcalNo:'DCAL-002',dcalDate:'2025-01-15',fsdNo:'FSD-2568-002',fsdDate:'2025-01-17',docNo:'DOC/002',docDate:'2025-01-14',subject:'Management Committee Meeting Report No.1/2568',status:'pel',statusNote:'',files:[{name:'Meeting.pdf',type:'pdf',url:'https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF2.pdf'}],uid:2,fiscal:'2568'},
-    {id:3,dcalNo:'DCAL-003',dcalDate:'2025-02-05',fsdNo:'FSD-2568-003',fsdDate:'2025-02-07',docNo:'DOC/003',docDate:'2025-02-03',subject:'MOU Academic Cooperation Agreement',status:'dg',statusNote:'Waiting for DG signature',files:[{name:'MOU.pdf',type:'pdf',url:'https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF2.pdf'}],uid:3,fiscal:'2568'},
-    {id:4,dcalNo:'DCAL-004',dcalDate:'2025-02-20',fsdNo:'FSD-2568-004',fsdDate:'2025-02-22',docNo:'DOC/004',docDate:'2025-02-18',subject:'Digital Taskforce Appointment Order',status:'head',statusNote:'Pending review',files:[{name:'Order.pdf',type:'pdf',url:'https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF2.pdf'}],uid:1,fiscal:'2568'},
-    {id:5,dcalNo:'DCAL-005',dcalDate:'2025-03-10',fsdNo:'FSD-2568-005',fsdDate:'2025-03-12',docNo:'DOC/005',docDate:'2025-03-08',subject:'Strategic Development Plan 2568-2572',status:'ops',statusNote:'',files:[{name:'Plan.pdf',type:'pdf',url:'https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF2.pdf'}],uid:2,fiscal:'2568'},
+    {id:1,dcalNo:'DCAL-001',dcalDate:'2026-01-10',fsdNo:'FSD-2026-001',fsdDate:'2026-01-12',docNo:'DOC/001',docDate:'2026-01-08',subject:'IT System Development Budget Approval',status:'done',statusNote:'Approved',files:[{name:'IT_Budget.pdf',type:'pdf',url:'https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF2.pdf'}],uid:1,fiscal:'2026'},
+    {id:2,dcalNo:'DCAL-002',dcalDate:'2026-01-15',fsdNo:'FSD-2026-002',fsdDate:'2026-01-17',docNo:'DOC/002',docDate:'2026-01-14',subject:'Management Committee Meeting Report No.1/2026',status:'pel',statusNote:'',files:[{name:'Meeting.pdf',type:'pdf',url:'https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF2.pdf'}],uid:2,fiscal:'2026'},
+    {id:3,dcalNo:'DCAL-003',dcalDate:'2026-02-05',fsdNo:'FSD-2026-003',fsdDate:'2026-02-07',docNo:'DOC/003',docDate:'2026-02-03',subject:'MOU Academic Cooperation Agreement',status:'dg',statusNote:'Waiting for DG signature',files:[{name:'MOU.pdf',type:'pdf',url:'https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF2.pdf'}],uid:3,fiscal:'2026'},
+    {id:4,dcalNo:'DCAL-004',dcalDate:'2026-02-20',fsdNo:'FSD-2026-004',fsdDate:'2026-02-22',docNo:'DOC/004',docDate:'2026-02-18',subject:'Digital Taskforce Appointment Order',status:'head',statusNote:'Pending review',files:[{name:'Order.pdf',type:'pdf',url:'https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF2.pdf'}],uid:1,fiscal:'2026'},
+    {id:5,dcalNo:'DCAL-005',dcalDate:'2026-03-10',fsdNo:'FSD-2026-005',fsdDate:'2026-03-12',docNo:'DOC/005',docDate:'2026-03-08',subject:'Strategic Development Plan 2026-2030',status:'ops',statusNote:'',files:[{name:'Plan.pdf',type:'pdf',url:'https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF2.pdf'}],uid:2,fiscal:'2026'},
   ],
   nid:{u:4,d:6},
 };
@@ -75,6 +74,23 @@ let ssNid=2, activeSS=1, activeCell=null;
 function mkData(r,c){const d=[];for(let i=0;i<r;i++)d.push(Array(c).fill(''));return d;}
 
 // ════════════════════════════════════════════════
+//  PERSISTENCE (localStorage)
+// ════════════════════════════════════════════════
+const LS = {
+  users:'fsd_users', session:'fsd_session', page:'fsd_page',
+  sheets:'fsd_sheets', custom:'fsd_custom'
+};
+function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+function saveUsers(){lsSet(LS.users,{users:DB.users,nidU:DB.nid.u});}
+function loadUsers(){const x=lsGet(LS.users);if(x&&Array.isArray(x.users)&&x.users.length){DB.users=x.users;if(x.nidU)DB.nid.u=x.nidU;}}
+function saveSheets(){lsSet(LS.sheets,{sheetPages:sheetPages.map(s=>({id:s.id,name:s.name,rawUrl:s.rawUrl,url:s.url})),shNid});}
+function loadSheets(){const x=lsGet(LS.sheets);if(x&&Array.isArray(x.sheetPages)){sheetPages=x.sheetPages.map(s=>({...s,data:null,loading:true,error:null,lastFetch:null}));if(x.shNid)shNid=x.shNid;}}
+function saveCustom(){lsSet(LS.custom,{customPages,cpNid});}
+function loadCustom(){const x=lsGet(LS.custom);if(x&&Array.isArray(x.customPages)){customPages=x.customPages;if(x.cpNid)cpNid=x.cpNid;}}
+
+// ════════════════════════════════════════════════
 //  AUTH
 // ════════════════════════════════════════════════
 function doLogin(){
@@ -83,6 +99,7 @@ function doLogin(){
   const usr=DB.users.find(x=>x.u===u&&x.p===p);
   if(!usr){Swal.fire({icon:'error',title:'Login Failed',text:'Invalid username or password',confirmButtonColor:'var(--p)'});return;}
   CU=usr;
+  lsSet(LS.session,{u:usr.u});
   if(GAS_URL) loadFromSheet(); else showApp();
 }
 document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
@@ -90,7 +107,7 @@ document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')
 function doLogout(){
   Swal.fire({title:'Sign Out?',icon:'question',showCancelButton:true,confirmButtonText:'Sign Out',
     cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'})
-  .then(r=>{if(r.isConfirmed){CU=null;document.getElementById('LP').style.display='flex';document.getElementById('AP').style.display='none';}});
+  .then(r=>{if(r.isConfirmed){CU=null;lsDel(LS.session);lsDel(LS.page);document.getElementById('LP').style.display='flex';document.getElementById('AP').style.display='none';}});
 }
 
 // ─── Load from GAS on login ───────────────────────
@@ -103,7 +120,7 @@ async function loadFromSheet(){
       DB.docs=json.docs.map(d=>({
         id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,
         docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,
-        owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:d.fiscal||'2568'
+        owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:d.fiscal||String(new Date().getFullYear())
       }));
     }
   }catch(e){console.warn('GAS load failed, using demo data',e);}
@@ -121,7 +138,34 @@ function showApp(){
   document.getElementById('sbName').textContent=CU.name;
   document.getElementById('sbRole').textContent=CU.role==='admin'?'Admin':'Staff';
   document.getElementById('tDate').textContent=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-  buildNav(); goPage(CU.role==='admin'?'dash':'sdash');
+  buildNav();
+  const saved=lsGet(LS.page);
+  if(saved&&saved.key){restorePage(saved);} else goPage('dash');
+}
+function restorePage(s){
+  if(s.type==='sheet'){const sp=sheetPages.find(x=>String(x.id)===String(s.key));if(sp){goSheetPage(sp.id);return;}}
+  if(s.type==='custom'){const cp=customPages.find(x=>String(x.id)===String(s.key));if(cp){goCustomPage(cp.id);return;}}
+  // hide menus that staff no longer has
+  const allowed=(CU.role==='admin'?adminMenuItems:staffMenuItems).map(m=>m.id);
+  if(allowed.includes(s.key)) goPage(s.key); else goPage('dash');
+}
+function reRenderCurrent(){
+  if(!currentPageKey)return;
+  if(currentPageType==='sheet'){const sp=sheetPages.find(x=>String(x.id)===String(currentPageKey));if(sp){goSheetPage(sp.id);return;}}
+  if(currentPageType==='custom'){const cp=customPages.find(x=>String(x.id)===String(currentPageKey));if(cp){goCustomPage(cp.id);return;}}
+  goPage(currentPageKey);
+}
+async function autoRefresh(){
+  if(GAS_URL){
+    try{
+      const res=await fetch(`${GAS_URL}?action=getDocuments`);
+      const json=await res.json();
+      if(json.docs){
+        DB.docs=json.docs.map(d=>({id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:d.fiscal||String(new Date().getFullYear())}));
+      }
+    }catch(e){}
+  }
+  reRenderCurrent();
 }
 function initials(n){const a=(n||'').split(' ');return((a[0]?.[0]||'')+(a[1]?.[0]||'')).toUpperCase()||'?';}
 
@@ -167,7 +211,7 @@ function goPage(p){
   deactivateAll();
   const ni=document.getElementById('ni-'+p); if(ni) ni.classList.add('active');
   document.getElementById('tTitle').textContent=TITLES[p]||p;
-  if(p==='stats'){goStats();return;}
+  currentPageKey=p; currentPageType='page'; lsSet(LS.page,{key:p,type:'page'});
   let el=document.getElementById('pg-'+p);
   if(!el){el=document.createElement('div');el.className='pg';el.id='pg-'+p;document.getElementById('contentArea').appendChild(el);}
   el.classList.add('active'); renderPage(p,el);
@@ -178,7 +222,7 @@ function renderPage(p,el){
   const R={
     dash:renderDash, docs:renderDocs, track:e=>renderTrack(e,'all',false),
     users:renderUsers, customize:renderCustomize,
-    sdash:renderSDash, mydocs:renderMyDocs, mytrack:e=>renderTrack(e,'all',true), profile:renderProfile,
+    sdash:renderDash, mydocs:renderDocs, mytrack:e=>renderTrack(e,'all',false), profile:renderProfile,
   };
   if(R[p]) R[p](el);
 }
@@ -188,6 +232,7 @@ function goSheetPage(id){
   const ni=document.getElementById('sni-'+id); if(ni) ni.classList.add('active');
   const s=sheetPages.find(x=>x.id===id); if(!s) return;
   document.getElementById('tTitle').textContent='📊 '+s.name;
+  currentPageKey=id; currentPageType='sheet'; lsSet(LS.page,{key:id,type:'sheet'});
   let el=document.getElementById('shpg-'+id);
   if(!el){el=document.createElement('div');el.className='pg';el.id='shpg-'+id;document.getElementById('contentArea').appendChild(el);}
   el.classList.add('active'); renderSheetPage(s,el);
@@ -199,6 +244,7 @@ function goCustomPage(id){
   const ni=document.getElementById('ni-cp-'+id); if(ni) ni.classList.add('active');
   const cp=customPages.find(x=>x.id===id); if(!cp) return;
   document.getElementById('tTitle').textContent=cp.label;
+  currentPageKey=id; currentPageType='custom'; lsSet(LS.page,{key:id,type:'custom'});
   let el=document.getElementById('cppg-'+id);
   if(!el){el=document.createElement('div');el.className='pg';el.id='cppg-'+id;document.getElementById('contentArea').appendChild(el);}
   el.classList.add('active');
@@ -235,7 +281,7 @@ function cp_bold(id){document.execCommand('bold');}
 function cp_italic(id){document.execCommand('italic');}
 function cp_link(id){Swal.fire({title:'Insert Link',input:'url',inputPlaceholder:'https://...',confirmButtonText:'Insert',confirmButtonColor:'var(--p)'}).then(r=>{if(r.isConfirmed&&r.value)document.execCommand('createLink',false,r.value);});}
 function cp_save(id,html){const cp=customPages.find(x=>x.id===id);if(cp)cp.content=html;}
-function deleteCustomPage(id){customPages=customPages.filter(x=>x.id!==id);buildNav();goPage(CU.role==='admin'?'dash':'sdash');}
+function deleteCustomPage(id){customPages=customPages.filter(x=>x.id!==id);saveCustom();buildNav();goPage('dash');}
 
 // ════════════════════════════════════════════════
 //  DASHBOARD
@@ -262,15 +308,29 @@ function renderDash(el){
     <div class="card"><div class="ch"><h3><i class="fas fa-calendar-alt" style="color:var(--p)"></i> Year</h3></div>
       <div class="cb"><div class="cw"><canvas id="fyBar"></canvas></div></div></div>
   </div>
-  <div class="card"><div class="ch"><h3><i class="fas fa-clock" style="color:var(--og)"></i> Recent Documents</h3></div>
+  <div class="card"><div class="ch">
+    <h3><i class="fas fa-clock" style="color:var(--og)"></i> Recent Documents</h3>
+    <button class="btn btn-p btn-sm" onclick="openAddDoc()"><i class="fas fa-plus"></i> Add Document</button>
+  </div>
   <div class="cb"><div class="tw"><table>
-    <thead><tr><th>FSD No</th><th>Subject</th><th>Status</th><th>Date</th><th>Files</th></tr></thead>
-    <tbody>${[...DB.docs].reverse().slice(0,5).map(d=>`<tr>
+    <thead><tr><th>DCAL No</th><th>DCAL Date</th><th>FSD No</th><th>FSD Date</th><th>Doc No</th><th>Doc Date</th><th style="min-width:190px">Subject</th><th>Status</th><th>Files</th><th>Manage</th></tr></thead>
+    <tbody>${[...DB.docs].reverse().slice(0,10).map(d=>`<tr>
+      <td><code style="font-size:11px">${d.dcalNo}</code></td>
+      <td style="white-space:nowrap">${fmtDate(d.dcalDate)}</td>
       <td><code style="font-size:11px">${d.fsdNo}</code></td>
-      <td class="tdl" onclick="openDet(${d.id})" style="max-width:220px">${d.subject}</td>
-      <td>${sbadge(d.status)}</td><td style="white-space:nowrap">${d.fsdDate}</td>
-      <td><div style="display:flex;gap:3px">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer">${ficon(f.type)}</span>`).join('')}</div></td>
-    </tr>`).join('')}</tbody>
+      <td style="white-space:nowrap">${fmtDate(d.fsdDate)}</td>
+      <td style="font-size:11px">${d.docNo||'-'}</td>
+      <td style="white-space:nowrap">${fmtDate(d.docDate)}</td>
+      <td class="tdl" style="max-width:210px;white-space:normal" onclick="openDet(${d.id})">${d.subject}</td>
+      <td>${sbadge(d.status)}</td>
+      <td><div style="display:flex;gap:3px;flex-wrap:wrap">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer" title="${f.name}">${ficon(f.type)}</span>`).join('')}</div></td>
+      <td><div style="display:flex;gap:3px">
+        <button class="btn btn-ol btn-sm btn-ico" onclick="openDet(${d.id})"><i class="fas fa-eye"></i></button>
+        <button class="btn btn-c btn-sm btn-ico"  onclick="openStMo(${d.id})"><i class="fas fa-exchange-alt"></i></button>
+        <button class="btn btn-ol btn-sm btn-ico" onclick="openEditDoc(${d.id})"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-d btn-sm btn-ico"  onclick="delDoc(${d.id})"><i class="fas fa-trash"></i></button>
+      </div></td>
+    </tr>`).join('')||`<tr><td colspan="10"><div class="empty"><i class="fas fa-inbox"></i><p>No documents</p></div></td></tr>`}</tbody>
   </table></div></div></div>`;
 
   const stClr={head:'#2E7D32',pel:'#1565C0',ops:'#F57C00',air:'#7B1FA2',dg:'#311B92',done:'#00695C'};
@@ -307,7 +367,7 @@ function showQF(filter,label){
   document.getElementById('quickTb').innerHTML=[...docs].reverse().map(d=>`<tr>
     <td><code style="font-size:11px">${d.fsdNo}</code></td>
     <td class="tdl" onclick="closeMo('moQuick');openDet(${d.id})" style="max-width:240px">${d.subject}</td>
-    <td>${sbadge(d.status)}</td><td style="white-space:nowrap">${d.fsdDate}</td>
+    <td>${sbadge(d.status)}</td><td style="white-space:nowrap">${fmtDate(d.fsdDate)}</td>
   </tr>`).join('')||`<tr><td colspan="4"><div class="empty" style="padding:20px"><p>No documents</p></div></td></tr>`;
   openMo('moQuick');
 }
@@ -352,11 +412,11 @@ function refDocs(){
   if(!docs.length){tb.innerHTML=`<tr><td colspan="10"><div class="empty"><i class="fas fa-inbox"></i><p>No documents found</p></div></td></tr>`;return;}
   tb.innerHTML=docs.map(d=>`<tr>
     <td><code style="font-size:11px">${d.dcalNo}</code></td>
-    <td style="white-space:nowrap">${d.dcalDate}</td>
+    <td style="white-space:nowrap">${fmtDate(d.dcalDate)}</td>
     <td><code style="font-size:11px">${d.fsdNo}</code></td>
-    <td style="white-space:nowrap">${d.fsdDate}</td>
+    <td style="white-space:nowrap">${fmtDate(d.fsdDate)}</td>
     <td style="font-size:11px">${d.docNo||'-'}</td>
-    <td style="white-space:nowrap">${d.docDate||'-'}</td>
+    <td style="white-space:nowrap">${fmtDate(d.docDate)}</td>
     <td class="tdl" style="max-width:210px;white-space:normal" onclick="openDet(${d.id})">${d.subject}</td>
     <td>${sbadge(d.status)}</td>
     <td><div style="display:flex;gap:3px;flex-wrap:wrap">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer" title="${f.name}">${ficon(f.type)}</span>`).join('')}</div></td>
@@ -383,13 +443,13 @@ function openDet(id){
     </div>
     <div class="det-grid">
       <div class="det-item"><div class="det-lbl">DCAL No</div><div class="det-val">${d.dcalNo}</div></div>
-      <div class="det-item"><div class="det-lbl">DCAL Date</div><div class="det-val">${d.dcalDate}</div></div>
+      <div class="det-item"><div class="det-lbl">DCAL Date</div><div class="det-val">${fmtDate(d.dcalDate)}</div></div>
       <div class="det-item"><div class="det-lbl">FSD No</div><div class="det-val">${d.fsdNo}</div></div>
-      <div class="det-item"><div class="det-lbl">FSD Date</div><div class="det-val">${d.fsdDate}</div></div>
+      <div class="det-item"><div class="det-lbl">FSD Date</div><div class="det-val">${fmtDate(d.fsdDate)}</div></div>
       <div class="det-item"><div class="det-lbl">Document No</div><div class="det-val">${d.docNo||'-'}</div></div>
-      <div class="det-item"><div class="det-lbl">Document Date</div><div class="det-val">${d.docDate||'-'}</div></div>
+      <div class="det-item"><div class="det-lbl">Document Date</div><div class="det-val">${fmtDate(d.docDate)}</div></div>
       <div class="det-item" style="grid-column:1/-1"><div class="det-lbl">Subject</div><div class="det-val" style="font-size:14px;font-weight:600">${d.subject}</div></div>
-      <div class="det-item"><div class="det-lbl">Year (พศ/คศ)</div><div class="det-val">${d.fiscal} / ${parseInt(d.fiscal)-543}</div></div>
+      <div class="det-item"><div class="det-lbl">Year</div><div class="det-val">${d.fiscal}</div></div>
       <div class="det-item"><div class="det-lbl">Uploaded By</div><div class="det-val">${DB.users.find(u=>u.id===d.uid)?.name||'-'}</div></div>
     </div>
     <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Status Timeline</div>
@@ -425,8 +485,9 @@ function saveStatus(){
     d.status=document.getElementById('stSel').value;
     d.statusNote=document.getElementById('stNote').value.trim();
     if(GAS_URL) await gasPost({action:'saveDocument',doc:d});
-    hideSpin();closeMo('moSt');refDocs();refMyDocs();
-    Swal.fire({icon:'success',title:'Status Updated',toast:true,position:'top-end',showConfirmButton:false,timer:2000});
+    hideSpin();closeMo('moSt');
+    Swal.fire({icon:'success',title:'Status Updated',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
+    autoRefresh();
   },300);
 }
 
@@ -495,7 +556,7 @@ function buildTkCards(all,tab){
     const s=SM[d.status]||SM.head;
     return`<div class="tc">
       <div class="tc-h" onclick="tkTog(this)">
-        <div style="min-width:0;flex:1"><div class="tc-dn">${d.fsdNo}</div><div class="tc-ds">${d.subject}</div><div class="tc-dm">${d.fsdDate}</div></div>
+        <div style="min-width:0;flex:1"><div class="tc-dn">${d.fsdNo}</div><div class="tc-ds">${d.subject}</div><div class="tc-dm">${fmtDate(d.fsdDate)}</div></div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
           <span class="badge ${s.cls}"><i class="fas ${s.icon}"></i> ${s.label}</span>
           <i class="fas fa-chevron-down" style="color:var(--g400);font-size:11px;transition:.2s"></i>
@@ -539,9 +600,12 @@ function saveUser(){
   if(!u||!p||!n||!d){Swal.fire({icon:'warning',title:'Please fill all required fields'});return;}
   if(eUid){const usr=DB.users.find(x=>x.id===eUid);if(usr)Object.assign(usr,{u,p,name:n,dept:d,role:r});}
   else DB.users.push({id:DB.nid.u++,u,p,name:n,dept:d,role:r});
-  closeMo('moUser');refUsers();Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1800});
+  saveUsers();
+  closeMo('moUser');
+  Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
+  autoRefresh();
 }
-function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){DB.users=DB.users.filter(x=>x.id!==id);refUsers();}});}
+function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){DB.users=DB.users.filter(x=>x.id!==id);saveUsers();autoRefresh();}});}
 
 // ════════════════════════════════════════════════
 //  ADD / EDIT DOCUMENT + UPLOAD TO DRIVE
@@ -597,8 +661,9 @@ async function saveDoc(){
     }
   }
 
-  hideSpin();setUplProg(0);refDocs();refMyDocs();
-  Swal.fire({icon:'success',title:GAS_URL?'Saved to Google Sheets & Drive!':'Document saved (Demo Mode)',toast:true,position:'top-end',showConfirmButton:false,timer:2500});
+  hideSpin();setUplProg(0);
+  Swal.fire({icon:'success',title:GAS_URL?'Saved to Google Sheets & Drive!':'Document saved (Demo Mode)',toast:true,position:'top-end',showConfirmButton:false,timer:1800});
+  autoRefresh();
 }
 
 async function uploadToDrive(file){
@@ -619,7 +684,7 @@ async function uploadToDrive(file){
 function delDoc(id){
   const d=DB.docs.find(x=>x.id===id);if(!d)return;
   Swal.fire({title:'Delete document?',text:d.subject,icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'})
-  .then(async r=>{if(r.isConfirmed){DB.docs=DB.docs.filter(x=>x.id!==id);if(GAS_URL)await gasPost({action:'deleteDocument',id});refDocs();refMyDocs();}});
+  .then(async r=>{if(r.isConfirmed){DB.docs=DB.docs.filter(x=>x.id!==id);if(GAS_URL)await gasPost({action:'deleteDocument',id});autoRefresh();}});
 }
 
 // ════════════════════════════════════════════════
@@ -640,7 +705,7 @@ function renderSDash(el){
     <tbody>${[...mine].reverse().slice(0,5).map(d=>`<tr>
       <td><code style="font-size:11px">${d.fsdNo}</code></td>
       <td class="tdl" onclick="openDet(${d.id})" style="max-width:220px">${d.subject}</td>
-      <td>${sbadge(d.status)}</td><td style="white-space:nowrap">${d.fsdDate}</td>
+      <td>${sbadge(d.status)}</td><td style="white-space:nowrap">${fmtDate(d.fsdDate)}</td>
       <td><div style="display:flex;gap:3px">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer">${ficon(f.type)}</span>`).join('')}</div></td>
     </tr>`).join('')||`<tr><td colspan="5"><div class="empty" style="padding:20px"><p>No documents yet</p></div></td></tr>`}
     </tbody>
@@ -661,7 +726,7 @@ function refMyDocs(){
   if(!docs.length){tb.innerHTML=`<tr><td colspan="6"><div class="empty"><i class="fas fa-inbox"></i><p>No documents yet</p></div></td></tr>`;return;}
   tb.innerHTML=docs.map(d=>`<tr>
     <td><code style="font-size:11px">${d.fsdNo}</code></td>
-    <td style="white-space:nowrap">${d.fsdDate}</td>
+    <td style="white-space:nowrap">${fmtDate(d.fsdDate)}</td>
     <td class="tdl" style="max-width:200px;white-space:normal" onclick="openDet(${d.id})">${d.subject}</td>
     <td>${sbadge(d.status)}</td>
     <td><div style="display:flex;gap:3px;flex-wrap:wrap">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer" title="${f.name}">${ficon(f.type)}</span>`).join('')}</div></td>
@@ -948,7 +1013,7 @@ function addCustomPage(){
   if(!name){Swal.fire({icon:'warning',title:'Please enter a page name'});return;}
   const id='cp'+(cpNid++);
   customPages.push({id,label:name,icon,type,url:type==='iframe'?url:'',content:'',ssData:null,ssLinks:null});
-  buildNav();closeMo('moAddPage');
+  saveCustom();buildNav();closeMo('moAddPage');
   const custEl=document.getElementById('pg-customize');if(custEl&&custEl.classList.contains('active'))renderCustomize(custEl);
   Swal.fire({icon:'success',title:`Page "${name}" added!`,toast:true,position:'top-end',showConfirmButton:false,timer:2000});
 }
@@ -956,10 +1021,10 @@ function addCustomPage(){
 function addSheetFromCustomize(){
   const name=v('shN'),rawUrl=v('shU');
   if(!name||!rawUrl){Swal.fire({icon:'warning',title:'Please enter name and URL'});return;}
-  const csvUrl=normSheetUrl(rawUrl);const id=shNid++;
-  sheetPages.push({id,name,url:csvUrl,rawUrl,data:null,loading:true,error:null,lastFetch:null});
-  buildNav();fetchSheet(id);
-  setTimeout(()=>goSheetPage(id),150);
+  const id=shNid++;
+  sheetPages.push({id,name,rawUrl,embedUrl:toEmbedUrl(rawUrl),lastFetch:Date.now()});
+  saveSheets();buildNav();
+  setTimeout(()=>goSheetPage(id),100);
 }
 
 document.getElementById('cpType').addEventListener('change',function(){
@@ -967,69 +1032,82 @@ document.getElementById('cpType').addEventListener('change',function(){
 });
 
 // ════════════════════════════════════════════════
-//  GOOGLE SHEETS VIEWER
+//  GOOGLE SHEETS VIEWER (native iframe embed)
 // ════════════════════════════════════════════════
 function addSheetConfirm(){
   const name=v('shN'),rawUrl=v('shU');
   if(!name||!rawUrl){Swal.fire({icon:'warning',title:'Please enter name and URL'});return;}
-  const csvUrl=normSheetUrl(rawUrl);const id=shNid++;
-  sheetPages.push({id,name,url:csvUrl,rawUrl,data:null,loading:true,error:null,lastFetch:null});
-  closeMo('moSheet');buildNav();fetchSheet(id);
+  const id=shNid++;
+  sheetPages.push({id,name,rawUrl,embedUrl:toEmbedUrl(rawUrl),lastFetch:Date.now()});
+  saveSheets();closeMo('moSheet');buildNav();
   setTimeout(()=>goSheetPage(id),100);
 }
-function normSheetUrl(url){
-  if(url.includes('output=csv')||url.includes('format=csv'))return url;
+function toEmbedUrl(url){
+  // Try to convert any Google Sheets URL into an embeddable view that preserves
+  // native Google Sheets look (colors, formatting, clickable HYPERLINK links).
   const m=url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  if(m){const gm=url.match(/[#&?]gid=(\d+)/);return`https://docs.google.com/spreadsheets/d/${m[1]}/pub?output=csv${gm?'&gid='+gm[1]:''}`;}
+  if(m){
+    const gm=url.match(/[#&?]gid=(\d+)/);
+    const gid=gm?gm[1]:'0';
+    // /preview keeps the full Google Sheets toolbar-less grid, with colors,
+    // formulas, and clickable HYPERLINK cells preserved. widget=true&headers=false
+    // hides the chrome and shows only the grid like Google's own embed.
+    return `https://docs.google.com/spreadsheets/d/${m[1]}/preview?gid=${gid}&widget=true&headers=true&chrome=false&rm=minimal`;
+  }
   return url;
 }
-function fetchSheet(id){
-  const s=sheetPages.find(x=>x.id===id);if(!s)return;
-  s.loading=true;s.error=null;
-  const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),12000);
-  fetch(s.url,{signal:ctrl.signal})
-    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})
-    .then(csv=>{s.data=csvParse(csv);s.loading=false;s.lastFetch=Date.now();updSheet(id);})
-    .catch(e=>{s.loading=false;s.error=e.name==='AbortError'?'Timed out.':'Failed: '+e.message+'. Make sure sheet is published (File→Publish to web→CSV).';updSheet(id);});
-}
-function updSheet(id){const el=document.getElementById('shpg-'+id);if(el&&el.classList.contains('active')){const s=sheetPages.find(x=>x.id===id);if(s)renderSheetPage(s,el);}}
+let shTimers={};
 function renderSheetPage(s,el){
-  const last=s.lastFetch?new Date(s.lastFetch).toLocaleTimeString():'—';
-  el.innerHTML=`<div class="card"><div class="ch">
+  // realtime: reload iframe every 30s
+  if(shTimers[s.id])clearInterval(shTimers[s.id]);
+  el.innerHTML=`<div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 110px)"><div class="ch">
     <h3><i class="fas fa-table" style="color:var(--gn)"></i> ${s.name}</h3>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span style="font-size:11px;color:var(--g400)">Updated: <strong id="sht-${s.id}">${last}</strong></span>
+      <span style="font-size:11px;color:var(--g400)">Live · auto-refresh 30s · Updated <strong id="sht-${s.id}">${new Date(s.lastFetch||Date.now()).toLocaleTimeString()}</strong></span>
       <button class="btn btn-g btn-sm" onclick="refreshSh(${s.id})"><i class="fas fa-sync"></i> Refresh</button>
+      <a class="btn btn-ol btn-sm" href="${s.rawUrl}" target="_blank"><i class="fas fa-external-link-alt"></i> Open</a>
       <button class="btn btn-d btn-sm" onclick="rmSheet(${s.id})"><i class="fas fa-trash"></i> Remove</button>
     </div>
   </div>
-  <div class="cb">
-    <div class="sh-info"><i class="fas fa-link" style="color:var(--cy)"></i> <strong>Source:</strong> ${s.rawUrl||s.url}</div>
-    <div id="shd-${s.id}">${buildSheetData(s)}</div>
+  <div class="cb" style="flex:1;padding:0;overflow:hidden">
+    <iframe id="shf-${s.id}" src="${s.embedUrl}" style="width:100%;height:100%;border:none;display:block" allow="clipboard-write"></iframe>
   </div></div>`;
+  shTimers[s.id]=setInterval(()=>{
+    const f=document.getElementById('shf-'+s.id);
+    if(!f){clearInterval(shTimers[s.id]);delete shTimers[s.id];return;}
+    const u=new URL(s.embedUrl);u.searchParams.set('_t',Date.now());f.src=u.toString();
+    s.lastFetch=Date.now();
+    const t=document.getElementById('sht-'+s.id);if(t)t.textContent=new Date().toLocaleTimeString();
+  },30000);
 }
-function buildSheetData(s){
-  if(s.loading)return`<div style="text-align:center;padding:32px;color:var(--g400)"><div class="spin" style="display:inline-block;width:28px;height:28px;border-width:3px;margin-bottom:12px"></div><p>Loading…</p></div>`;
-  if(s.error)return`<div class="empty"><i class="fas fa-exclamation-triangle" style="color:var(--rd)"></i><p style="color:var(--rd)">${s.error}</p></div>`;
-  if(!s.data||!s.data.length)return`<div class="empty"><i class="fas fa-table"></i><p>No data</p></div>`;
-  return`<div class="sh-tbl-wrap"><table style="min-width:auto"><thead><tr>${s.data[0].map(h=>`<th>${h||'-'}</th>`).join('')}</tr></thead><tbody>${s.data.slice(1).map(row=>`<tr>${row.map(c=>`<td>${c||''}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div style="font-size:11px;color:var(--g400);margin-top:8px">${s.data.length-1} rows · ${s.data[0]?.length||0} cols</div>`;
+function refreshSh(id){
+  const s=sheetPages.find(x=>x.id===id);if(!s)return;
+  const f=document.getElementById('shf-'+id);
+  if(f){const u=new URL(s.embedUrl);u.searchParams.set('_t',Date.now());f.src=u.toString();}
+  s.lastFetch=Date.now();
+  const t=document.getElementById('sht-'+id);if(t)t.textContent=new Date().toLocaleTimeString();
 }
-function refreshSh(id){const s=sheetPages.find(x=>x.id===id);if(!s)return;s.loading=true;s.data=null;const da=document.getElementById('shd-'+id);if(da)da.innerHTML=buildSheetData(s);fetchSheet(id);}
-function rmSheet(id){Swal.fire({title:'Remove Sheet?',icon:'warning',showCancelButton:true,confirmButtonText:'Remove',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){sheetPages=sheetPages.filter(x=>x.id!==id);const old=document.getElementById('shpg-'+id);if(old)old.remove();buildNav();goPage(CU.role==='admin'?'dash':'sdash');}});}
-function csvParse(text){const rows=[];for(const line of text.split('\n')){if(!line.trim())continue;const cells=[];let c='',q=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){c+='"';i++;}else q=!q;}else if(ch===','&&!q){cells.push(c.trim());c='';}else c+=ch;}cells.push(c.trim());rows.push(cells);}return rows.filter(r=>r.some(c=>c));}
+function rmSheet(id){Swal.fire({title:'Remove Sheet?',icon:'warning',showCancelButton:true,confirmButtonText:'Remove',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){sheetPages=sheetPages.filter(x=>x.id!==id);if(shTimers[id]){clearInterval(shTimers[id]);delete shTimers[id];}saveSheets();const old=document.getElementById('shpg-'+id);if(old)old.remove();buildNav();goPage('dash');}});}
 
 // ════════════════════════════════════════════════
 //  FILE DRAG & DROP
 // ════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
+  // restore persisted state
+  loadUsers();loadSheets();loadCustom();
+  const sess=lsGet(LS.session);
+  if(sess&&sess.u){
+    const usr=DB.users.find(x=>x.u===sess.u);
+    if(usr){CU=usr;if(GAS_URL)loadFromSheet();else showApp();}
+  }
   const dz=document.getElementById('dz'),dzIn=document.getElementById('dzIn');
-  if(!dz||!dzIn)return;
-  dz.addEventListener('click',()=>dzIn.click());
-  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
-  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
-  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');addFiles(e.dataTransfer.files);});
-  dzIn.addEventListener('change',e=>{addFiles(e.target.files);e.target.value='';});
-  // close modals on overlay
+  if(dz&&dzIn){
+    dz.addEventListener('click',()=>dzIn.click());
+    dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+    dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+    dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');addFiles(e.dataTransfer.files);});
+    dzIn.addEventListener('change',e=>{addFiles(e.target.files);e.target.value='';});
+  }
   document.querySelectorAll('.mo').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeMo(o.id);}));
 });
 function addFiles(files){
@@ -1083,7 +1161,8 @@ function ficon(t){
 }
 function gType(n){const e=(n||'').split('.').pop().toLowerCase();return['jpg','jpeg','png','gif','webp','bmp'].includes(e)?'img':e;}
 function fmtB(b){if(!b)return'';const k=1024;const s=['B','KB','MB','GB'];const i=Math.floor(Math.log(b)/Math.log(k));return(b/Math.pow(k,i)).toFixed(1)+' '+s[i];}
-function toFY(d){if(!d)return'2568';return String(parseInt(d.split('-')[0])+543);}
+function toFY(d){if(!d)return String(new Date().getFullYear());return String(parseInt(d.split('-')[0]));}
+function fmtDate(d){if(!d)return'-';const p=String(d).split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d;}
 function openMo(id){document.getElementById(id).classList.add('open');}
 function closeMo(id){document.getElementById(id).classList.remove('open');if(id==='moPDF')setTimeout(()=>{const f=document.getElementById('pdfFrame');if(f)f.src='about:blank';},300);}
 function showSpin(msg='Loading…'){document.getElementById('spinOv').style.display='flex';document.getElementById('spinTx').textContent=msg;}
