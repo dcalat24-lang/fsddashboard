@@ -120,6 +120,7 @@ async function loadFromSheet(){
       DB.docs=json.docs.map(d=>({
         id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,
         docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,
+        statusNotes:Array.isArray(d.statusNotes)?d.statusNotes:[],
         owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:d.fiscal||String(new Date().getFullYear())
       }));
     }
