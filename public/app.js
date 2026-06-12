@@ -85,8 +85,8 @@ function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
 function saveUsers(){lsSet(LS.users,{users:DB.users,nidU:DB.nid.u});}
 function loadUsers(){const x=lsGet(LS.users);if(x&&Array.isArray(x.users)&&x.users.length){DB.users=x.users;if(x.nidU)DB.nid.u=x.nidU;}}
-function saveSheets(){lsSet(LS.sheets,{sheetPages:sheetPages.map(s=>({id:s.id,name:s.name,rawUrl:s.rawUrl,url:s.url})),shNid});}
-function loadSheets(){const x=lsGet(LS.sheets);if(x&&Array.isArray(x.sheetPages)){sheetPages=x.sheetPages.map(s=>({...s,data:null,loading:true,error:null,lastFetch:null}));if(x.shNid)shNid=x.shNid;}}
+function saveSheets(){lsSet(LS.sheets,{sheetPages:sheetPages.map(s=>({id:s.id,name:s.name,rawUrl:s.rawUrl,embedUrl:s.embedUrl})),shNid});}
+function loadSheets(){const x=lsGet(LS.sheets);if(x&&Array.isArray(x.sheetPages)){sheetPages=x.sheetPages.map(s=>({...s,embedUrl:s.embedUrl||toEmbedUrl(s.rawUrl||''),lastFetch:null}));if(x.shNid)shNid=x.shNid;}}
 function saveCustom(){lsSet(LS.custom,{customPages,cpNid});}
 function loadCustom(){const x=lsGet(LS.custom);if(x&&Array.isArray(x.customPages)){customPages=x.customPages;if(x.cpNid)cpNid=x.cpNid;}}
 
