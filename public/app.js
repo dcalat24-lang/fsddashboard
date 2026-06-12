@@ -74,6 +74,23 @@ let ssNid=2, activeSS=1, activeCell=null;
 function mkData(r,c){const d=[];for(let i=0;i<r;i++)d.push(Array(c).fill(''));return d;}
 
 // ════════════════════════════════════════════════
+//  PERSISTENCE (localStorage)
+// ════════════════════════════════════════════════
+const LS = {
+  users:'fsd_users', session:'fsd_session', page:'fsd_page',
+  sheets:'fsd_sheets', custom:'fsd_custom'
+};
+function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+function saveUsers(){lsSet(LS.users,{users:DB.users,nidU:DB.nid.u});}
+function loadUsers(){const x=lsGet(LS.users);if(x&&Array.isArray(x.users)&&x.users.length){DB.users=x.users;if(x.nidU)DB.nid.u=x.nidU;}}
+function saveSheets(){lsSet(LS.sheets,{sheetPages:sheetPages.map(s=>({id:s.id,name:s.name,rawUrl:s.rawUrl,url:s.url})),shNid});}
+function loadSheets(){const x=lsGet(LS.sheets);if(x&&Array.isArray(x.sheetPages)){sheetPages=x.sheetPages.map(s=>({...s,data:null,loading:true,error:null,lastFetch:null}));if(x.shNid)shNid=x.shNid;}}
+function saveCustom(){lsSet(LS.custom,{customPages,cpNid});}
+function loadCustom(){const x=lsGet(LS.custom);if(x&&Array.isArray(x.customPages)){customPages=x.customPages;if(x.cpNid)cpNid=x.cpNid;}}
+
+// ════════════════════════════════════════════════
 //  AUTH
 // ════════════════════════════════════════════════
 function doLogin(){
@@ -82,6 +99,7 @@ function doLogin(){
   const usr=DB.users.find(x=>x.u===u&&x.p===p);
   if(!usr){Swal.fire({icon:'error',title:'Login Failed',text:'Invalid username or password',confirmButtonColor:'var(--p)'});return;}
   CU=usr;
+  lsSet(LS.session,{u:usr.u});
   if(GAS_URL) loadFromSheet(); else showApp();
 }
 document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
@@ -89,7 +107,7 @@ document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')
 function doLogout(){
   Swal.fire({title:'Sign Out?',icon:'question',showCancelButton:true,confirmButtonText:'Sign Out',
     cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'})
-  .then(r=>{if(r.isConfirmed){CU=null;document.getElementById('LP').style.display='flex';document.getElementById('AP').style.display='none';}});
+  .then(r=>{if(r.isConfirmed){CU=null;lsDel(LS.session);lsDel(LS.page);document.getElementById('LP').style.display='flex';document.getElementById('AP').style.display='none';}});
 }
 
 // ─── Load from GAS on login ───────────────────────
