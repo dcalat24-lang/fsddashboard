@@ -211,7 +211,7 @@ function goPage(p){
   deactivateAll();
   const ni=document.getElementById('ni-'+p); if(ni) ni.classList.add('active');
   document.getElementById('tTitle').textContent=TITLES[p]||p;
-  if(p==='stats'){goStats();return;}
+  currentPageKey=p; currentPageType='page'; lsSet(LS.page,{key:p,type:'page'});
   let el=document.getElementById('pg-'+p);
   if(!el){el=document.createElement('div');el.className='pg';el.id='pg-'+p;document.getElementById('contentArea').appendChild(el);}
   el.classList.add('active'); renderPage(p,el);
@@ -222,7 +222,7 @@ function renderPage(p,el){
   const R={
     dash:renderDash, docs:renderDocs, track:e=>renderTrack(e,'all',false),
     users:renderUsers, customize:renderCustomize,
-    sdash:renderSDash, mydocs:renderMyDocs, mytrack:e=>renderTrack(e,'all',true), profile:renderProfile,
+    sdash:renderDash, mydocs:renderDocs, mytrack:e=>renderTrack(e,'all',false), profile:renderProfile,
   };
   if(R[p]) R[p](el);
 }
@@ -232,6 +232,7 @@ function goSheetPage(id){
   const ni=document.getElementById('sni-'+id); if(ni) ni.classList.add('active');
   const s=sheetPages.find(x=>x.id===id); if(!s) return;
   document.getElementById('tTitle').textContent='📊 '+s.name;
+  currentPageKey=id; currentPageType='sheet'; lsSet(LS.page,{key:id,type:'sheet'});
   let el=document.getElementById('shpg-'+id);
   if(!el){el=document.createElement('div');el.className='pg';el.id='shpg-'+id;document.getElementById('contentArea').appendChild(el);}
   el.classList.add('active'); renderSheetPage(s,el);
