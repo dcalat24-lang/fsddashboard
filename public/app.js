@@ -600,9 +600,12 @@ function saveUser(){
   if(!u||!p||!n||!d){Swal.fire({icon:'warning',title:'Please fill all required fields'});return;}
   if(eUid){const usr=DB.users.find(x=>x.id===eUid);if(usr)Object.assign(usr,{u,p,name:n,dept:d,role:r});}
   else DB.users.push({id:DB.nid.u++,u,p,name:n,dept:d,role:r});
-  closeMo('moUser');refUsers();Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1800});
+  saveUsers();
+  closeMo('moUser');
+  Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
+  autoRefresh();
 }
-function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){DB.users=DB.users.filter(x=>x.id!==id);refUsers();}});}
+function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){DB.users=DB.users.filter(x=>x.id!==id);saveUsers();autoRefresh();}});}
 
 // ════════════════════════════════════════════════
 //  ADD / EDIT DOCUMENT + UPLOAD TO DRIVE
