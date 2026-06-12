@@ -1154,7 +1154,8 @@ function ficon(t){
 }
 function gType(n){const e=(n||'').split('.').pop().toLowerCase();return['jpg','jpeg','png','gif','webp','bmp'].includes(e)?'img':e;}
 function fmtB(b){if(!b)return'';const k=1024;const s=['B','KB','MB','GB'];const i=Math.floor(Math.log(b)/Math.log(k));return(b/Math.pow(k,i)).toFixed(1)+' '+s[i];}
-function toFY(d){if(!d)return'2568';return String(parseInt(d.split('-')[0])+543);}
+function toFY(d){if(!d)return String(new Date().getFullYear());return String(parseInt(d.split('-')[0]));}
+function fmtDate(d){if(!d)return'-';const p=String(d).split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d;}
 function openMo(id){document.getElementById(id).classList.add('open');}
 function closeMo(id){document.getElementById(id).classList.remove('open');if(id==='moPDF')setTimeout(()=>{const f=document.getElementById('pdfFrame');if(f)f.src='about:blank';},300);}
 function showSpin(msg='Loading…'){document.getElementById('spinOv').style.display='flex';document.getElementById('spinTx').textContent=msg;}
