@@ -244,6 +244,7 @@ function goCustomPage(id){
   const ni=document.getElementById('ni-cp-'+id); if(ni) ni.classList.add('active');
   const cp=customPages.find(x=>x.id===id); if(!cp) return;
   document.getElementById('tTitle').textContent=cp.label;
+  currentPageKey=id; currentPageType='custom'; lsSet(LS.page,{key:id,type:'custom'});
   let el=document.getElementById('cppg-'+id);
   if(!el){el=document.createElement('div');el.className='pg';el.id='cppg-'+id;document.getElementById('contentArea').appendChild(el);}
   el.classList.add('active');
