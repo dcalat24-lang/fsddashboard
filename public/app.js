@@ -483,13 +483,47 @@ function saveStatus(){
   const d=DB.docs.find(x=>x.id===eSid);if(!d)return;
   showSpin();
   setTimeout(async()=>{
-    d.status=document.getElementById('stSel').value;
-    d.statusNote=document.getElementById('stNote').value.trim();
+    const newStatus=document.getElementById('stSel').value;
+    const newNote=document.getElementById('stNote').value.trim();
+    if(!Array.isArray(d.statusNotes)) d.statusNotes=[];
+    if(newNote || newStatus!==d.status){
+      d.statusNotes.push({at:new Date().toISOString(),by:(CU&&CU.name)||'',status:newStatus,note:newNote});
+    }
+    d.status=newStatus;
+    d.statusNote=newNote;
     if(GAS_URL) await gasPost({action:'saveDocument',doc:d});
     hideSpin();closeMo('moSt');
     Swal.fire({icon:'success',title:'Status Updated',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
     autoRefresh();
   },300);
+}
+function toggleNotes(id){
+  const r=document.getElementById('nh-'+id);if(!r)return;
+  r.style.display=r.style.display==='table-row'?'none':'table-row';
+}
+function noteHistoryRow(d,colspan){
+  const list=Array.isArray(d.statusNotes)?d.statusNotes:[];
+  if(!list.length) return '';
+  const rows=[...list].reverse().map(n=>{
+    const sm=SM[n.status]||SM.head;
+    const when=n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-left:3px solid ${sm.color};background:#fff;border-radius:6px;margin-bottom:6px">
+      <span class="badge ${sm.cls}" style="flex-shrink:0"><i class="fas ${sm.icon}"></i> ${sm.label}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12.5px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${n.note||'<em style="color:var(--g400)">(no note)</em>'}</div>
+        <div style="font-size:10.5px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${when}${n.by?' · '+n.by:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<tr id="nh-${d.id}" style="display:none"><td colspan="${colspan}" style="background:var(--g50);padding:10px 14px">
+    <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-history"></i> Note History (${list.length})</div>
+    ${rows}
+  </td></tr>`;
+}
+function noteToggleBtn(d){
+  const n=(Array.isArray(d.statusNotes)?d.statusNotes.length:0);
+  if(!n) return '';
+  return `<button class="btn btn-ol btn-sm btn-ico" title="Note history (${n})" onclick="toggleNotes(${d.id})"><i class="fas fa-history"></i></button>`;
 }
 
 // ════════════════════════════════════════════════
