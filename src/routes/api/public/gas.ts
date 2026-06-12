@@ -51,6 +51,7 @@ function rowToDoc(r: Record<string, unknown>) {
     subject: r.subject ?? "",
     status: r.status ?? "head",
     statusNote: r.status_note ?? "",
+    statusNotes: r.status_notes ?? [],
     files: r.files ?? [],
     uid: r.uid ?? 1,
     owner: r.owner ?? "",
