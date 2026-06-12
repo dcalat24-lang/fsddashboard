@@ -71,6 +71,7 @@ function docToRow(d: Record<string, unknown>): Record<string, unknown> {
     subject: s(d.subject),
     status: s(d.status) ?? "head",
     status_note: s(d.statusNote) ?? "",
+    status_notes: d.statusNotes ?? [],
     files: d.files ?? [],
     uid: d.uid == null ? null : Number(d.uid),
     owner: s(d.owner),
