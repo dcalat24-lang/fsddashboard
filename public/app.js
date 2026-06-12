@@ -421,13 +421,14 @@ function refDocs(){
     <td class="tdl" style="max-width:210px;white-space:normal" onclick="openDet(${d.id})">${d.subject}</td>
     <td>${sbadge(d.status)}</td>
     <td><div style="display:flex;gap:3px;flex-wrap:wrap">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer" title="${f.name}">${ficon(f.type)}</span>`).join('')}</div></td>
-    <td><div style="display:flex;gap:3px">
+    <td><div style="display:flex;gap:3px;flex-wrap:wrap">
+      ${noteToggleBtn(d)}
       <button class="btn btn-ol btn-sm btn-ico" onclick="openDet(${d.id})"><i class="fas fa-eye"></i></button>
       <button class="btn btn-c btn-sm btn-ico"  onclick="openStMo(${d.id})"><i class="fas fa-exchange-alt"></i></button>
       <button class="btn btn-ol btn-sm btn-ico" onclick="openEditDoc(${d.id})"><i class="fas fa-edit"></i></button>
       <button class="btn btn-d btn-sm btn-ico"  onclick="delDoc(${d.id})"><i class="fas fa-trash"></i></button>
     </div></td>
-  </tr>`).join('');
+  </tr>${noteHistoryRow(d,10)}`).join('');
 }
 function clrF(){['fFrom','fTo','fSrch'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const s=document.getElementById('fSt');if(s)s.value='';refDocs();}
 
