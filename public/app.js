@@ -120,7 +120,7 @@ async function loadFromSheet(){
       DB.docs=json.docs.map(d=>({
         id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,
         docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,
-        owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:d.fiscal||'2568'
+        owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:d.fiscal||String(new Date().getFullYear())
       }));
     }
   }catch(e){console.warn('GAS load failed, using demo data',e);}
@@ -367,7 +367,7 @@ function showQF(filter,label){
   document.getElementById('quickTb').innerHTML=[...docs].reverse().map(d=>`<tr>
     <td><code style="font-size:11px">${d.fsdNo}</code></td>
     <td class="tdl" onclick="closeMo('moQuick');openDet(${d.id})" style="max-width:240px">${d.subject}</td>
-    <td>${sbadge(d.status)}</td><td style="white-space:nowrap">${d.fsdDate}</td>
+    <td>${sbadge(d.status)}</td><td style="white-space:nowrap">${fmtDate(d.fsdDate)}</td>
   </tr>`).join('')||`<tr><td colspan="4"><div class="empty" style="padding:20px"><p>No documents</p></div></td></tr>`;
   openMo('moQuick');
 }
@@ -443,13 +443,13 @@ function openDet(id){
     </div>
     <div class="det-grid">
       <div class="det-item"><div class="det-lbl">DCAL No</div><div class="det-val">${d.dcalNo}</div></div>
-      <div class="det-item"><div class="det-lbl">DCAL Date</div><div class="det-val">${d.dcalDate}</div></div>
+      <div class="det-item"><div class="det-lbl">DCAL Date</div><div class="det-val">${fmtDate(d.dcalDate)}</div></div>
       <div class="det-item"><div class="det-lbl">FSD No</div><div class="det-val">${d.fsdNo}</div></div>
-      <div class="det-item"><div class="det-lbl">FSD Date</div><div class="det-val">${d.fsdDate}</div></div>
+      <div class="det-item"><div class="det-lbl">FSD Date</div><div class="det-val">${fmtDate(d.fsdDate)}</div></div>
       <div class="det-item"><div class="det-lbl">Document No</div><div class="det-val">${d.docNo||'-'}</div></div>
-      <div class="det-item"><div class="det-lbl">Document Date</div><div class="det-val">${d.docDate||'-'}</div></div>
+      <div class="det-item"><div class="det-lbl">Document Date</div><div class="det-val">${fmtDate(d.docDate)}</div></div>
       <div class="det-item" style="grid-column:1/-1"><div class="det-lbl">Subject</div><div class="det-val" style="font-size:14px;font-weight:600">${d.subject}</div></div>
-      <div class="det-item"><div class="det-lbl">Year (พศ/คศ)</div><div class="det-val">${d.fiscal} / ${parseInt(d.fiscal)-543}</div></div>
+      <div class="det-item"><div class="det-lbl">Year</div><div class="det-val">${d.fiscal}</div></div>
       <div class="det-item"><div class="det-lbl">Uploaded By</div><div class="det-val">${DB.users.find(u=>u.id===d.uid)?.name||'-'}</div></div>
     </div>
     <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Status Timeline</div>
@@ -555,7 +555,7 @@ function buildTkCards(all,tab){
     const s=SM[d.status]||SM.head;
     return`<div class="tc">
       <div class="tc-h" onclick="tkTog(this)">
-        <div style="min-width:0;flex:1"><div class="tc-dn">${d.fsdNo}</div><div class="tc-ds">${d.subject}</div><div class="tc-dm">${d.fsdDate}</div></div>
+        <div style="min-width:0;flex:1"><div class="tc-dn">${d.fsdNo}</div><div class="tc-ds">${d.subject}</div><div class="tc-dm">${fmtDate(d.fsdDate)}</div></div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
           <span class="badge ${s.cls}"><i class="fas ${s.icon}"></i> ${s.label}</span>
           <i class="fas fa-chevron-down" style="color:var(--g400);font-size:11px;transition:.2s"></i>
@@ -700,7 +700,7 @@ function renderSDash(el){
     <tbody>${[...mine].reverse().slice(0,5).map(d=>`<tr>
       <td><code style="font-size:11px">${d.fsdNo}</code></td>
       <td class="tdl" onclick="openDet(${d.id})" style="max-width:220px">${d.subject}</td>
-      <td>${sbadge(d.status)}</td><td style="white-space:nowrap">${d.fsdDate}</td>
+      <td>${sbadge(d.status)}</td><td style="white-space:nowrap">${fmtDate(d.fsdDate)}</td>
       <td><div style="display:flex;gap:3px">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer">${ficon(f.type)}</span>`).join('')}</div></td>
     </tr>`).join('')||`<tr><td colspan="5"><div class="empty" style="padding:20px"><p>No documents yet</p></div></td></tr>`}
     </tbody>
@@ -721,7 +721,7 @@ function refMyDocs(){
   if(!docs.length){tb.innerHTML=`<tr><td colspan="6"><div class="empty"><i class="fas fa-inbox"></i><p>No documents yet</p></div></td></tr>`;return;}
   tb.innerHTML=docs.map(d=>`<tr>
     <td><code style="font-size:11px">${d.fsdNo}</code></td>
-    <td style="white-space:nowrap">${d.fsdDate}</td>
+    <td style="white-space:nowrap">${fmtDate(d.fsdDate)}</td>
     <td class="tdl" style="max-width:200px;white-space:normal" onclick="openDet(${d.id})">${d.subject}</td>
     <td>${sbadge(d.status)}</td>
     <td><div style="display:flex;gap:3px;flex-wrap:wrap">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer" title="${f.name}">${ficon(f.type)}</span>`).join('')}</div></td>
