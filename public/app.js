@@ -781,7 +781,7 @@ function renderProfile(el){
     <div class="fr"><div class="ff"><label>Username</label><input id="pu" value="${CU.u}"></div></div>
     <div class="fr"><div class="ff"><label>New Password <span style="font-weight:400;color:var(--g400)">(leave blank to keep)</span></label><input type="password" id="pp" placeholder="New password"></div></div>
     <div class="fr"><div class="ff"><label>Full Name</label><input id="pn" value="${CU.name}"></div></div>
-    <div class="fr"><div class="ff"><label>Department</label><input id="pdpt" value="${DB.users.find(u=>u.id===CU.id)?.dept||''}"></div></div>
+    <div class="fr"><div class="ff"><label>Group</label><input id="pdpt" value="${DB.users.find(u=>u.id===CU.id)?.dept||''}"></div></div>
     <button class="btn btn-p" onclick="saveProfile()"><i class="fas fa-save"></i> Save Changes</button>
   </div></div>`;
 }
