@@ -38,18 +38,17 @@ let adminMenuItems = [
   {id:'dash',     label:'Dashboard',          icon:'fa-tachometer-alt', visible:true},
   {id:'docs',     label:'All Documents',       icon:'fa-file-alt',       visible:true},
   {id:'track',    label:'Document Tracking',   icon:'fa-route',          visible:true},
-  {id:'stats',    label:'Statistics FSD',      icon:'fa-th',             visible:true},
   {id:'users',    label:'User Management',     icon:'fa-users-cog',      visible:true},
   {id:'customize',label:'Customize',           icon:'fa-sliders-h',      visible:true},
 ];
 let staffMenuItems = [
-  {id:'sdash',   label:'Dashboard',        icon:'fa-home',            visible:true},
-  {id:'mydocs',  label:'My Documents',     icon:'fa-folder-open',     visible:true},
-  {id:'mytrack', label:'Track My Docs',    icon:'fa-search-location', visible:true},
-  {id:'stats',   label:'Statistics FSD',   icon:'fa-th',              visible:true, readOnly:true},
-  {id:'profile', label:'Edit Profile',     icon:'fa-user-edit',       visible:true},
+  {id:'dash',    label:'Dashboard',         icon:'fa-tachometer-alt', visible:true},
+  {id:'docs',    label:'All Documents',     icon:'fa-file-alt',       visible:true},
+  {id:'track',   label:'Document Tracking', icon:'fa-route',          visible:true},
+  {id:'profile', label:'Edit Profile',      icon:'fa-user-edit',      visible:true},
 ];
 let customPages=[], cpNid=1;
+let currentPageKey=null, currentPageType=null; // for restore + auto refresh
 
 // ─── LOCAL DEMO DATA ──────────────────────────────
 const DB = {
