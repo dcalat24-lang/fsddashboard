@@ -1,0 +1,1 @@
+ALTER TABLE public.fsd_documents ADD COLUMN IF NOT EXISTS status_notes jsonb NOT NULL DEFAULT '[]'::jsonb;
