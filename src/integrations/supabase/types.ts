@@ -29,6 +29,7 @@ export type Database = {
           owner: string | null
           status: string | null
           status_note: string | null
+          status_notes: Json
           subject: string | null
           uid: number | null
           updated_at: string
@@ -47,6 +48,7 @@ export type Database = {
           owner?: string | null
           status?: string | null
           status_note?: string | null
+          status_notes?: Json
           subject?: string | null
           uid?: number | null
           updated_at?: string
@@ -65,6 +67,7 @@ export type Database = {
           owner?: string | null
           status?: string | null
           status_note?: string | null
+          status_notes?: Json
           subject?: string | null
           uid?: number | null
           updated_at?: string

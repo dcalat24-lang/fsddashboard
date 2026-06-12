@@ -85,8 +85,8 @@ function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
 function saveUsers(){lsSet(LS.users,{users:DB.users,nidU:DB.nid.u});}
 function loadUsers(){const x=lsGet(LS.users);if(x&&Array.isArray(x.users)&&x.users.length){DB.users=x.users;if(x.nidU)DB.nid.u=x.nidU;}}
-function saveSheets(){lsSet(LS.sheets,{sheetPages:sheetPages.map(s=>({id:s.id,name:s.name,rawUrl:s.rawUrl,url:s.url})),shNid});}
-function loadSheets(){const x=lsGet(LS.sheets);if(x&&Array.isArray(x.sheetPages)){sheetPages=x.sheetPages.map(s=>({...s,data:null,loading:true,error:null,lastFetch:null}));if(x.shNid)shNid=x.shNid;}}
+function saveSheets(){lsSet(LS.sheets,{sheetPages:sheetPages.map(s=>({id:s.id,name:s.name,rawUrl:s.rawUrl,embedUrl:s.embedUrl})),shNid});}
+function loadSheets(){const x=lsGet(LS.sheets);if(x&&Array.isArray(x.sheetPages)){sheetPages=x.sheetPages.map(s=>({...s,embedUrl:s.embedUrl||toEmbedUrl(s.rawUrl||''),lastFetch:null}));if(x.shNid)shNid=x.shNid;}}
 function saveCustom(){lsSet(LS.custom,{customPages,cpNid});}
 function loadCustom(){const x=lsGet(LS.custom);if(x&&Array.isArray(x.customPages)){customPages=x.customPages;if(x.cpNid)cpNid=x.cpNid;}}
 
@@ -120,6 +120,7 @@ async function loadFromSheet(){
       DB.docs=json.docs.map(d=>({
         id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,
         docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,
+        statusNotes:Array.isArray(d.statusNotes)?d.statusNotes:[],
         owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:d.fiscal||String(new Date().getFullYear())
       }));
     }
@@ -161,7 +162,7 @@ async function autoRefresh(){
       const res=await fetch(`${GAS_URL}?action=getDocuments`);
       const json=await res.json();
       if(json.docs){
-        DB.docs=json.docs.map(d=>({id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:d.fiscal||String(new Date().getFullYear())}));
+        DB.docs=json.docs.map(d=>({id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,statusNotes:Array.isArray(d.statusNotes)?d.statusNotes:[],owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:d.fiscal||String(new Date().getFullYear())}));
       }
     }catch(e){}
   }
@@ -324,13 +325,14 @@ function renderDash(el){
       <td class="tdl" style="max-width:210px;white-space:normal" onclick="openDet(${d.id})">${d.subject}</td>
       <td>${sbadge(d.status)}</td>
       <td><div style="display:flex;gap:3px;flex-wrap:wrap">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer" title="${f.name}">${ficon(f.type)}</span>`).join('')}</div></td>
-      <td><div style="display:flex;gap:3px">
+      <td><div style="display:flex;gap:3px;flex-wrap:wrap">
+        ${noteToggleBtn(d)}
         <button class="btn btn-ol btn-sm btn-ico" onclick="openDet(${d.id})"><i class="fas fa-eye"></i></button>
         <button class="btn btn-c btn-sm btn-ico"  onclick="openStMo(${d.id})"><i class="fas fa-exchange-alt"></i></button>
         <button class="btn btn-ol btn-sm btn-ico" onclick="openEditDoc(${d.id})"><i class="fas fa-edit"></i></button>
         <button class="btn btn-d btn-sm btn-ico"  onclick="delDoc(${d.id})"><i class="fas fa-trash"></i></button>
       </div></td>
-    </tr>`).join('')||`<tr><td colspan="10"><div class="empty"><i class="fas fa-inbox"></i><p>No documents</p></div></td></tr>`}</tbody>
+    </tr>${noteHistoryRow(d,10)}`).join('')||`<tr><td colspan="10"><div class="empty"><i class="fas fa-inbox"></i><p>No documents</p></div></td></tr>`}</tbody>
   </table></div></div></div>`;
 
   const stClr={head:'#2E7D32',pel:'#1565C0',ops:'#F57C00',air:'#7B1FA2',dg:'#311B92',done:'#00695C'};
@@ -420,13 +422,14 @@ function refDocs(){
     <td class="tdl" style="max-width:210px;white-space:normal" onclick="openDet(${d.id})">${d.subject}</td>
     <td>${sbadge(d.status)}</td>
     <td><div style="display:flex;gap:3px;flex-wrap:wrap">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer" title="${f.name}">${ficon(f.type)}</span>`).join('')}</div></td>
-    <td><div style="display:flex;gap:3px">
+    <td><div style="display:flex;gap:3px;flex-wrap:wrap">
+      ${noteToggleBtn(d)}
       <button class="btn btn-ol btn-sm btn-ico" onclick="openDet(${d.id})"><i class="fas fa-eye"></i></button>
       <button class="btn btn-c btn-sm btn-ico"  onclick="openStMo(${d.id})"><i class="fas fa-exchange-alt"></i></button>
       <button class="btn btn-ol btn-sm btn-ico" onclick="openEditDoc(${d.id})"><i class="fas fa-edit"></i></button>
       <button class="btn btn-d btn-sm btn-ico"  onclick="delDoc(${d.id})"><i class="fas fa-trash"></i></button>
     </div></td>
-  </tr>`).join('');
+  </tr>${noteHistoryRow(d,10)}`).join('');
 }
 function clrF(){['fFrom','fTo','fSrch'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const s=document.getElementById('fSt');if(s)s.value='';refDocs();}
 
@@ -482,13 +485,47 @@ function saveStatus(){
   const d=DB.docs.find(x=>x.id===eSid);if(!d)return;
   showSpin();
   setTimeout(async()=>{
-    d.status=document.getElementById('stSel').value;
-    d.statusNote=document.getElementById('stNote').value.trim();
+    const newStatus=document.getElementById('stSel').value;
+    const newNote=document.getElementById('stNote').value.trim();
+    if(!Array.isArray(d.statusNotes)) d.statusNotes=[];
+    if(newNote || newStatus!==d.status){
+      d.statusNotes.push({at:new Date().toISOString(),by:(CU&&CU.name)||'',status:newStatus,note:newNote});
+    }
+    d.status=newStatus;
+    d.statusNote=newNote;
     if(GAS_URL) await gasPost({action:'saveDocument',doc:d});
     hideSpin();closeMo('moSt');
     Swal.fire({icon:'success',title:'Status Updated',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
     autoRefresh();
   },300);
+}
+function toggleNotes(id){
+  const r=document.getElementById('nh-'+id);if(!r)return;
+  r.style.display=r.style.display==='table-row'?'none':'table-row';
+}
+function noteHistoryRow(d,colspan){
+  const list=Array.isArray(d.statusNotes)?d.statusNotes:[];
+  if(!list.length) return '';
+  const rows=[...list].reverse().map(n=>{
+    const sm=SM[n.status]||SM.head;
+    const when=n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-left:3px solid ${sm.color};background:#fff;border-radius:6px;margin-bottom:6px">
+      <span class="badge ${sm.cls}" style="flex-shrink:0"><i class="fas ${sm.icon}"></i> ${sm.label}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12.5px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${n.note||'<em style="color:var(--g400)">(no note)</em>'}</div>
+        <div style="font-size:10.5px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${when}${n.by?' · '+n.by:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<tr id="nh-${d.id}" style="display:none"><td colspan="${colspan}" style="background:var(--g50);padding:10px 14px">
+    <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-history"></i> Note History (${list.length})</div>
+    ${rows}
+  </td></tr>`;
+}
+function noteToggleBtn(d){
+  const n=(Array.isArray(d.statusNotes)?d.statusNotes.length:0);
+  if(!n) return '';
+  return `<button class="btn btn-ol btn-sm btn-ico" title="Note history (${n})" onclick="toggleNotes(${d.id})"><i class="fas fa-history"></i></button>`;
 }
 
 // ════════════════════════════════════════════════
@@ -581,7 +618,7 @@ function tkTog(h){const b=h.nextElementSibling;const ic=h.querySelector('.fa-che
 function renderUsers(el){
   el.innerHTML=`<div class="card"><div class="ch"><h3><i class="fas fa-users" style="color:var(--p)"></i> User Management</h3>
     <button class="btn btn-p btn-sm" onclick="openAddUser()"><i class="fas fa-plus"></i> Add User</button></div>
-    <div class="cb"><div class="tw"><table><thead><tr><th>#</th><th>Username</th><th>Full Name</th><th>Department</th><th>Role</th><th>Manage</th></tr></thead><tbody id="userTb"></tbody></table></div></div></div>`;
+    <div class="cb"><div class="tw"><table><thead><tr><th>#</th><th>Username</th><th>Full Name</th><th>Group</th><th>Role</th><th>Manage</th></tr></thead><tbody id="userTb"></tbody></table></div></div></div>`;
   refUsers();
 }
 function refUsers(){
@@ -744,7 +781,7 @@ function renderProfile(el){
     <div class="fr"><div class="ff"><label>Username</label><input id="pu" value="${CU.u}"></div></div>
     <div class="fr"><div class="ff"><label>New Password <span style="font-weight:400;color:var(--g400)">(leave blank to keep)</span></label><input type="password" id="pp" placeholder="New password"></div></div>
     <div class="fr"><div class="ff"><label>Full Name</label><input id="pn" value="${CU.name}"></div></div>
-    <div class="fr"><div class="ff"><label>Department</label><input id="pdpt" value="${DB.users.find(u=>u.id===CU.id)?.dept||''}"></div></div>
+    <div class="fr"><div class="ff"><label>Group</label><input id="pdpt" value="${DB.users.find(u=>u.id===CU.id)?.dept||''}"></div></div>
     <button class="btn btn-p" onclick="saveProfile()"><i class="fas fa-save"></i> Save Changes</button>
   </div></div>`;
 }
