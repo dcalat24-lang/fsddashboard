@@ -1021,10 +1021,10 @@ function addCustomPage(){
 function addSheetFromCustomize(){
   const name=v('shN'),rawUrl=v('shU');
   if(!name||!rawUrl){Swal.fire({icon:'warning',title:'Please enter name and URL'});return;}
-  const csvUrl=normSheetUrl(rawUrl);const id=shNid++;
-  sheetPages.push({id,name,url:csvUrl,rawUrl,data:null,loading:true,error:null,lastFetch:null});
-  buildNav();fetchSheet(id);
-  setTimeout(()=>goSheetPage(id),150);
+  const id=shNid++;
+  sheetPages.push({id,name,rawUrl,embedUrl:toEmbedUrl(rawUrl),lastFetch:Date.now()});
+  saveSheets();buildNav();
+  setTimeout(()=>goSheetPage(id),100);
 }
 
 document.getElementById('cpType').addEventListener('change',function(){
@@ -1032,56 +1032,62 @@ document.getElementById('cpType').addEventListener('change',function(){
 });
 
 // ════════════════════════════════════════════════
-//  GOOGLE SHEETS VIEWER
+//  GOOGLE SHEETS VIEWER (native iframe embed)
 // ════════════════════════════════════════════════
 function addSheetConfirm(){
   const name=v('shN'),rawUrl=v('shU');
   if(!name||!rawUrl){Swal.fire({icon:'warning',title:'Please enter name and URL'});return;}
-  const csvUrl=normSheetUrl(rawUrl);const id=shNid++;
-  sheetPages.push({id,name,url:csvUrl,rawUrl,data:null,loading:true,error:null,lastFetch:null});
-  closeMo('moSheet');buildNav();fetchSheet(id);
+  const id=shNid++;
+  sheetPages.push({id,name,rawUrl,embedUrl:toEmbedUrl(rawUrl),lastFetch:Date.now()});
+  saveSheets();closeMo('moSheet');buildNav();
   setTimeout(()=>goSheetPage(id),100);
 }
-function normSheetUrl(url){
-  if(url.includes('output=csv')||url.includes('format=csv'))return url;
+function toEmbedUrl(url){
+  // Try to convert any Google Sheets URL into an embeddable view that preserves
+  // native Google Sheets look (colors, formatting, clickable HYPERLINK links).
   const m=url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  if(m){const gm=url.match(/[#&?]gid=(\d+)/);return`https://docs.google.com/spreadsheets/d/${m[1]}/pub?output=csv${gm?'&gid='+gm[1]:''}`;}
+  if(m){
+    const gm=url.match(/[#&?]gid=(\d+)/);
+    const gid=gm?gm[1]:'0';
+    // /preview keeps the full Google Sheets toolbar-less grid, with colors,
+    // formulas, and clickable HYPERLINK cells preserved. widget=true&headers=false
+    // hides the chrome and shows only the grid like Google's own embed.
+    return `https://docs.google.com/spreadsheets/d/${m[1]}/preview?gid=${gid}&widget=true&headers=true&chrome=false&rm=minimal`;
+  }
   return url;
 }
-function fetchSheet(id){
-  const s=sheetPages.find(x=>x.id===id);if(!s)return;
-  s.loading=true;s.error=null;
-  const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),12000);
-  fetch(s.url,{signal:ctrl.signal})
-    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})
-    .then(csv=>{s.data=csvParse(csv);s.loading=false;s.lastFetch=Date.now();updSheet(id);})
-    .catch(e=>{s.loading=false;s.error=e.name==='AbortError'?'Timed out.':'Failed: '+e.message+'. Make sure sheet is published (File→Publish to web→CSV).';updSheet(id);});
-}
-function updSheet(id){const el=document.getElementById('shpg-'+id);if(el&&el.classList.contains('active')){const s=sheetPages.find(x=>x.id===id);if(s)renderSheetPage(s,el);}}
+let shTimers={};
 function renderSheetPage(s,el){
-  const last=s.lastFetch?new Date(s.lastFetch).toLocaleTimeString():'—';
-  el.innerHTML=`<div class="card"><div class="ch">
+  // realtime: reload iframe every 30s
+  if(shTimers[s.id])clearInterval(shTimers[s.id]);
+  el.innerHTML=`<div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 110px)"><div class="ch">
     <h3><i class="fas fa-table" style="color:var(--gn)"></i> ${s.name}</h3>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span style="font-size:11px;color:var(--g400)">Updated: <strong id="sht-${s.id}">${last}</strong></span>
+      <span style="font-size:11px;color:var(--g400)">Live · auto-refresh 30s · Updated <strong id="sht-${s.id}">${new Date(s.lastFetch||Date.now()).toLocaleTimeString()}</strong></span>
       <button class="btn btn-g btn-sm" onclick="refreshSh(${s.id})"><i class="fas fa-sync"></i> Refresh</button>
+      <a class="btn btn-ol btn-sm" href="${s.rawUrl}" target="_blank"><i class="fas fa-external-link-alt"></i> Open</a>
       <button class="btn btn-d btn-sm" onclick="rmSheet(${s.id})"><i class="fas fa-trash"></i> Remove</button>
     </div>
   </div>
-  <div class="cb">
-    <div class="sh-info"><i class="fas fa-link" style="color:var(--cy)"></i> <strong>Source:</strong> ${s.rawUrl||s.url}</div>
-    <div id="shd-${s.id}">${buildSheetData(s)}</div>
+  <div class="cb" style="flex:1;padding:0;overflow:hidden">
+    <iframe id="shf-${s.id}" src="${s.embedUrl}" style="width:100%;height:100%;border:none;display:block" allow="clipboard-write"></iframe>
   </div></div>`;
+  shTimers[s.id]=setInterval(()=>{
+    const f=document.getElementById('shf-'+s.id);
+    if(!f){clearInterval(shTimers[s.id]);delete shTimers[s.id];return;}
+    const u=new URL(s.embedUrl);u.searchParams.set('_t',Date.now());f.src=u.toString();
+    s.lastFetch=Date.now();
+    const t=document.getElementById('sht-'+s.id);if(t)t.textContent=new Date().toLocaleTimeString();
+  },30000);
 }
-function buildSheetData(s){
-  if(s.loading)return`<div style="text-align:center;padding:32px;color:var(--g400)"><div class="spin" style="display:inline-block;width:28px;height:28px;border-width:3px;margin-bottom:12px"></div><p>Loading…</p></div>`;
-  if(s.error)return`<div class="empty"><i class="fas fa-exclamation-triangle" style="color:var(--rd)"></i><p style="color:var(--rd)">${s.error}</p></div>`;
-  if(!s.data||!s.data.length)return`<div class="empty"><i class="fas fa-table"></i><p>No data</p></div>`;
-  return`<div class="sh-tbl-wrap"><table style="min-width:auto"><thead><tr>${s.data[0].map(h=>`<th>${h||'-'}</th>`).join('')}</tr></thead><tbody>${s.data.slice(1).map(row=>`<tr>${row.map(c=>`<td>${c||''}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div style="font-size:11px;color:var(--g400);margin-top:8px">${s.data.length-1} rows · ${s.data[0]?.length||0} cols</div>`;
+function refreshSh(id){
+  const s=sheetPages.find(x=>x.id===id);if(!s)return;
+  const f=document.getElementById('shf-'+id);
+  if(f){const u=new URL(s.embedUrl);u.searchParams.set('_t',Date.now());f.src=u.toString();}
+  s.lastFetch=Date.now();
+  const t=document.getElementById('sht-'+id);if(t)t.textContent=new Date().toLocaleTimeString();
 }
-function refreshSh(id){const s=sheetPages.find(x=>x.id===id);if(!s)return;s.loading=true;s.data=null;const da=document.getElementById('shd-'+id);if(da)da.innerHTML=buildSheetData(s);fetchSheet(id);}
-function rmSheet(id){Swal.fire({title:'Remove Sheet?',icon:'warning',showCancelButton:true,confirmButtonText:'Remove',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){sheetPages=sheetPages.filter(x=>x.id!==id);const old=document.getElementById('shpg-'+id);if(old)old.remove();buildNav();goPage(CU.role==='admin'?'dash':'sdash');}});}
-function csvParse(text){const rows=[];for(const line of text.split('\n')){if(!line.trim())continue;const cells=[];let c='',q=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){c+='"';i++;}else q=!q;}else if(ch===','&&!q){cells.push(c.trim());c='';}else c+=ch;}cells.push(c.trim());rows.push(cells);}return rows.filter(r=>r.some(c=>c));}
+function rmSheet(id){Swal.fire({title:'Remove Sheet?',icon:'warning',showCancelButton:true,confirmButtonText:'Remove',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){sheetPages=sheetPages.filter(x=>x.id!==id);if(shTimers[id]){clearInterval(shTimers[id]);delete shTimers[id];}saveSheets();const old=document.getElementById('shpg-'+id);if(old)old.remove();buildNav();goPage('dash');}});}
 
 // ════════════════════════════════════════════════
 //  FILE DRAG & DROP
