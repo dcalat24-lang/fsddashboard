@@ -485,8 +485,9 @@ function saveStatus(){
     d.status=document.getElementById('stSel').value;
     d.statusNote=document.getElementById('stNote').value.trim();
     if(GAS_URL) await gasPost({action:'saveDocument',doc:d});
-    hideSpin();closeMo('moSt');refDocs();refMyDocs();
-    Swal.fire({icon:'success',title:'Status Updated',toast:true,position:'top-end',showConfirmButton:false,timer:2000});
+    hideSpin();closeMo('moSt');
+    Swal.fire({icon:'success',title:'Status Updated',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
+    autoRefresh();
   },300);
 }
 
