@@ -412,11 +412,11 @@ function refDocs(){
   if(!docs.length){tb.innerHTML=`<tr><td colspan="10"><div class="empty"><i class="fas fa-inbox"></i><p>No documents found</p></div></td></tr>`;return;}
   tb.innerHTML=docs.map(d=>`<tr>
     <td><code style="font-size:11px">${d.dcalNo}</code></td>
-    <td style="white-space:nowrap">${d.dcalDate}</td>
+    <td style="white-space:nowrap">${fmtDate(d.dcalDate)}</td>
     <td><code style="font-size:11px">${d.fsdNo}</code></td>
-    <td style="white-space:nowrap">${d.fsdDate}</td>
+    <td style="white-space:nowrap">${fmtDate(d.fsdDate)}</td>
     <td style="font-size:11px">${d.docNo||'-'}</td>
-    <td style="white-space:nowrap">${d.docDate||'-'}</td>
+    <td style="white-space:nowrap">${fmtDate(d.docDate)}</td>
     <td class="tdl" style="max-width:210px;white-space:normal" onclick="openDet(${d.id})">${d.subject}</td>
     <td>${sbadge(d.status)}</td>
     <td><div style="display:flex;gap:3px;flex-wrap:wrap">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer" title="${f.name}">${ficon(f.type)}</span>`).join('')}</div></td>
