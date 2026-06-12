@@ -308,15 +308,29 @@ function renderDash(el){
     <div class="card"><div class="ch"><h3><i class="fas fa-calendar-alt" style="color:var(--p)"></i> Year</h3></div>
       <div class="cb"><div class="cw"><canvas id="fyBar"></canvas></div></div></div>
   </div>
-  <div class="card"><div class="ch"><h3><i class="fas fa-clock" style="color:var(--og)"></i> Recent Documents</h3></div>
+  <div class="card"><div class="ch">
+    <h3><i class="fas fa-clock" style="color:var(--og)"></i> Recent Documents</h3>
+    <button class="btn btn-p btn-sm" onclick="openAddDoc()"><i class="fas fa-plus"></i> Add Document</button>
+  </div>
   <div class="cb"><div class="tw"><table>
-    <thead><tr><th>FSD No</th><th>Subject</th><th>Status</th><th>Date</th><th>Files</th></tr></thead>
-    <tbody>${[...DB.docs].reverse().slice(0,5).map(d=>`<tr>
+    <thead><tr><th>DCAL No</th><th>DCAL Date</th><th>FSD No</th><th>FSD Date</th><th>Doc No</th><th>Doc Date</th><th style="min-width:190px">Subject</th><th>Status</th><th>Files</th><th>Manage</th></tr></thead>
+    <tbody>${[...DB.docs].reverse().slice(0,10).map(d=>`<tr>
+      <td><code style="font-size:11px">${d.dcalNo}</code></td>
+      <td style="white-space:nowrap">${fmtDate(d.dcalDate)}</td>
       <td><code style="font-size:11px">${d.fsdNo}</code></td>
-      <td class="tdl" onclick="openDet(${d.id})" style="max-width:220px">${d.subject}</td>
-      <td>${sbadge(d.status)}</td><td style="white-space:nowrap">${d.fsdDate}</td>
-      <td><div style="display:flex;gap:3px">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer">${ficon(f.type)}</span>`).join('')}</div></td>
-    </tr>`).join('')}</tbody>
+      <td style="white-space:nowrap">${fmtDate(d.fsdDate)}</td>
+      <td style="font-size:11px">${d.docNo||'-'}</td>
+      <td style="white-space:nowrap">${fmtDate(d.docDate)}</td>
+      <td class="tdl" style="max-width:210px;white-space:normal" onclick="openDet(${d.id})">${d.subject}</td>
+      <td>${sbadge(d.status)}</td>
+      <td><div style="display:flex;gap:3px;flex-wrap:wrap">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer" title="${f.name}">${ficon(f.type)}</span>`).join('')}</div></td>
+      <td><div style="display:flex;gap:3px">
+        <button class="btn btn-ol btn-sm btn-ico" onclick="openDet(${d.id})"><i class="fas fa-eye"></i></button>
+        <button class="btn btn-c btn-sm btn-ico"  onclick="openStMo(${d.id})"><i class="fas fa-exchange-alt"></i></button>
+        <button class="btn btn-ol btn-sm btn-ico" onclick="openEditDoc(${d.id})"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-d btn-sm btn-ico"  onclick="delDoc(${d.id})"><i class="fas fa-trash"></i></button>
+      </div></td>
+    </tr>`).join('')||`<tr><td colspan="10"><div class="empty"><i class="fas fa-inbox"></i><p>No documents</p></div></td></tr>`}</tbody>
   </table></div></div></div>`;
 
   const stClr={head:'#2E7D32',pel:'#1565C0',ops:'#F57C00',air:'#7B1FA2',dg:'#311B92',done:'#00695C'};
