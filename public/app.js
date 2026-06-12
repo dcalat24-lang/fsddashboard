@@ -661,8 +661,9 @@ async function saveDoc(){
     }
   }
 
-  hideSpin();setUplProg(0);refDocs();refMyDocs();
-  Swal.fire({icon:'success',title:GAS_URL?'Saved to Google Sheets & Drive!':'Document saved (Demo Mode)',toast:true,position:'top-end',showConfirmButton:false,timer:2500});
+  hideSpin();setUplProg(0);
+  Swal.fire({icon:'success',title:GAS_URL?'Saved to Google Sheets & Drive!':'Document saved (Demo Mode)',toast:true,position:'top-end',showConfirmButton:false,timer:1800});
+  autoRefresh();
 }
 
 async function uploadToDrive(file){
