@@ -1013,7 +1013,7 @@ function addCustomPage(){
   if(!name){Swal.fire({icon:'warning',title:'Please enter a page name'});return;}
   const id='cp'+(cpNid++);
   customPages.push({id,label:name,icon,type,url:type==='iframe'?url:'',content:'',ssData:null,ssLinks:null});
-  buildNav();closeMo('moAddPage');
+  saveCustom();buildNav();closeMo('moAddPage');
   const custEl=document.getElementById('pg-customize');if(custEl&&custEl.classList.contains('active'))renderCustomize(custEl);
   Swal.fire({icon:'success',title:`Page "${name}" added!`,toast:true,position:'top-end',showConfirmButton:false,timer:2000});
 }
