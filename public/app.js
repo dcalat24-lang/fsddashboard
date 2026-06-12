@@ -618,7 +618,7 @@ function tkTog(h){const b=h.nextElementSibling;const ic=h.querySelector('.fa-che
 function renderUsers(el){
   el.innerHTML=`<div class="card"><div class="ch"><h3><i class="fas fa-users" style="color:var(--p)"></i> User Management</h3>
     <button class="btn btn-p btn-sm" onclick="openAddUser()"><i class="fas fa-plus"></i> Add User</button></div>
-    <div class="cb"><div class="tw"><table><thead><tr><th>#</th><th>Username</th><th>Full Name</th><th>Department</th><th>Role</th><th>Manage</th></tr></thead><tbody id="userTb"></tbody></table></div></div></div>`;
+    <div class="cb"><div class="tw"><table><thead><tr><th>#</th><th>Username</th><th>Full Name</th><th>Group</th><th>Role</th><th>Manage</th></tr></thead><tbody id="userTb"></tbody></table></div></div></div>`;
   refUsers();
 }
 function refUsers(){
