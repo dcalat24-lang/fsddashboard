@@ -684,7 +684,7 @@ async function uploadToDrive(file){
 function delDoc(id){
   const d=DB.docs.find(x=>x.id===id);if(!d)return;
   Swal.fire({title:'Delete document?',text:d.subject,icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'})
-  .then(async r=>{if(r.isConfirmed){DB.docs=DB.docs.filter(x=>x.id!==id);if(GAS_URL)await gasPost({action:'deleteDocument',id});refDocs();refMyDocs();}});
+  .then(async r=>{if(r.isConfirmed){DB.docs=DB.docs.filter(x=>x.id!==id);if(GAS_URL)await gasPost({action:'deleteDocument',id});autoRefresh();}});
 }
 
 // ════════════════════════════════════════════════
