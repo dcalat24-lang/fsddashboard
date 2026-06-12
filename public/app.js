@@ -138,7 +138,34 @@ function showApp(){
   document.getElementById('sbName').textContent=CU.name;
   document.getElementById('sbRole').textContent=CU.role==='admin'?'Admin':'Staff';
   document.getElementById('tDate').textContent=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-  buildNav(); goPage(CU.role==='admin'?'dash':'sdash');
+  buildNav();
+  const saved=lsGet(LS.page);
+  if(saved&&saved.key){restorePage(saved);} else goPage('dash');
+}
+function restorePage(s){
+  if(s.type==='sheet'){const sp=sheetPages.find(x=>String(x.id)===String(s.key));if(sp){goSheetPage(sp.id);return;}}
+  if(s.type==='custom'){const cp=customPages.find(x=>String(x.id)===String(s.key));if(cp){goCustomPage(cp.id);return;}}
+  // hide menus that staff no longer has
+  const allowed=(CU.role==='admin'?adminMenuItems:staffMenuItems).map(m=>m.id);
+  if(allowed.includes(s.key)) goPage(s.key); else goPage('dash');
+}
+function reRenderCurrent(){
+  if(!currentPageKey)return;
+  if(currentPageType==='sheet'){const sp=sheetPages.find(x=>String(x.id)===String(currentPageKey));if(sp){goSheetPage(sp.id);return;}}
+  if(currentPageType==='custom'){const cp=customPages.find(x=>String(x.id)===String(currentPageKey));if(cp){goCustomPage(cp.id);return;}}
+  goPage(currentPageKey);
+}
+async function autoRefresh(){
+  if(GAS_URL){
+    try{
+      const res=await fetch(`${GAS_URL}?action=getDocuments`);
+      const json=await res.json();
+      if(json.docs){
+        DB.docs=json.docs.map(d=>({id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:d.fiscal||String(new Date().getFullYear())}));
+      }
+    }catch(e){}
+  }
+  reRenderCurrent();
 }
 function initials(n){const a=(n||'').split(' ');return((a[0]?.[0]||'')+(a[1]?.[0]||'')).toUpperCase()||'?';}
 
