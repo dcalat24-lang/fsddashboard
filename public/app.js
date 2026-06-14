@@ -190,7 +190,7 @@ function buildNav(){
       h+=`<button class="ni" id="sni-${s.id}" onclick="goSheetPage(${s.id})">
         <span class="nic"><i class="fas fa-table" style="color:#FBC02D"></i></span>
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;max-width:130px">${s.name}</span>
-        <button onclick="event.stopPropagation();rmSheet(${s.id})" style="background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;font-size:11px;padding:2px 5px"><i class="fas fa-times"></i></button>
+        ${CU&&CU.role==='admin'?`<button onclick="event.stopPropagation();rmSheet(${s.id})" style="background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;font-size:11px;padding:2px 5px"><i class="fas fa-times"></i></button>`:''}
       </button>`;
     });
   }
