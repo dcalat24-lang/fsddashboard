@@ -344,7 +344,7 @@ function renderDash(el){
         plugins:{legend:{position:'bottom',labels:{font:{family:'Kanit',size:10},padding:8}}}}});
     const fc=document.getElementById('fyBar');
     if(fc){
-      const fyKeys=Object.keys(fyMap).filter(k=>!['2568','2569'].includes(k));
+      const fyKeys=Object.keys(fyMap);
       const fyl=fyKeys.slice();
       new Chart(fc,{type:'bar',data:{labels:fyl,datasets:[{label:'Docs',data:fyKeys.map(k=>fyMap[k]),
         backgroundColor:fyl.map((_,i)=>pal[i%pal.length]+'CC'),borderColor:fyl.map((_,i)=>pal[i%pal.length]),borderWidth:2,borderRadius:6}]},
