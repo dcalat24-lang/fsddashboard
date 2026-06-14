@@ -344,11 +344,12 @@ function renderDash(el){
         plugins:{legend:{position:'bottom',labels:{font:{family:'Kanit',size:10},padding:8}}}}});
     const fc=document.getElementById('fyBar');
     if(fc){
-      const fyl=Object.keys(fyMap).map(be=>`${be} (CE ${parseInt(be)-543})`);
-      new Chart(fc,{type:'bar',data:{labels:fyl,datasets:[{label:'Docs',data:Object.values(fyMap),
+      const fyKeys=Object.keys(fyMap).filter(k=>!['2568','2569'].includes(k));
+      const fyl=fyKeys.slice();
+      new Chart(fc,{type:'bar',data:{labels:fyl,datasets:[{label:'Docs',data:fyKeys.map(k=>fyMap[k]),
         backgroundColor:fyl.map((_,i)=>pal[i%pal.length]+'CC'),borderColor:fyl.map((_,i)=>pal[i%pal.length]),borderWidth:2,borderRadius:6}]},
         options:{responsive:true,maintainAspectRatio:false,
-          onClick:(e,els)=>{if(els.length){const be=Object.keys(fyMap)[els[0].index];showQF('fy_'+be,'Year '+be);}},
+          onClick:(e,els)=>{if(els.length){const be=fyKeys[els[0].index];showYearMonths(be);}},
           plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,font:{family:'Kanit'}}},x:{ticks:{font:{family:'Kanit',size:10}}}}}});
     }
     fixDG();
@@ -456,7 +457,7 @@ function openDet(id){
       <div class="det-item"><div class="det-lbl">Uploaded By</div><div class="det-val">${DB.users.find(u=>u.id===d.uid)?.name||'-'}</div></div>
     </div>
     <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Status Timeline</div>
-    <div class="pipe" style="background:var(--g50);padding:12px;border-radius:var(--r);margin-bottom:16px">${buildTL(d.status)}</div>
+    <div class="pipe" style="background:var(--g50);padding:12px;border-radius:var(--r);margin-bottom:16px">${buildTL(d.status,d)}</div>
     <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Attachments (${d.files.length})</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px">
       ${d.files.length?d.files.map(f=>`<div class="fi2" style="cursor:pointer" onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')">
@@ -466,15 +467,55 @@ function openDet(id){
   document.getElementById('detStBtn').onclick=()=>{closeMo('moDet');openStMo(id);};
   openMo('moDet');
 }
-function buildTL(cur){
+function buildTL(cur,d){
   const pg=['pel','ops','air'];const is=pg.includes(cur);const midSm=is?SM[cur]:null;
-  const steps=[{sm:SM.head},{sm:midSm,label:midSm?midSm.label:'Pel / Ops / Air',icon:midSm?midSm.icon:'fa-users-cog'},{sm:SM.dg},{sm:SM.done}];
+  const steps=[
+    {key:'head',sm:SM.head,match:['head']},
+    {key:'mid', sm:midSm,label:midSm?midSm.label:'Pel / Ops / Air',icon:midSm?midSm.icon:'fa-users-cog',match:['pel','ops','air']},
+    {key:'dg',  sm:SM.dg,match:['dg']},
+    {key:'done',sm:SM.done,match:['done']},
+  ];
   const ord={head:0,pel:1,ops:1,air:1,dg:2,done:3};const ci=ord[cur]??0;
+  const notes=d&&Array.isArray(d.statusNotes)?d.statusNotes:null;
   return steps.map((st,i)=>{
     const cls=i<ci?'done':i===ci?'active':'pending';
     const icon=st.sm?st.sm.icon:st.icon; const lbl=st.sm?st.sm.label:st.label;
-    return`<div class="ps ${cls}"><div class="pd"><i class="fas ${icon}"></i></div><div class="pl">${lbl}</div>${i===ci?'<div style="font-size:9px;color:var(--p);margin-top:2px">▲ Current</div>':''}</div>`;
+    let noteHtml='';
+    if(notes){
+      const ns=notes.filter(n=>st.match.includes(n.status)&&n.note);
+      if(ns.length){
+        const last=ns[ns.length-1];
+        noteHtml=`<div style="font-size:10.5px;color:var(--g700);margin-top:4px;padding:4px 6px;background:#FFFDE7;border-left:2px solid var(--yw);border-radius:3px;text-align:left;max-width:150px;white-space:normal;word-break:break-word"><i class="fas fa-sticky-note" style="color:var(--yw);font-size:9px"></i> ${escHtml(last.note)}${ns.length>1?` <span style="color:var(--g400)">+${ns.length-1}</span>`:''}</div>`;
+      }
+    }
+    const addBtn=d?`<button onclick="event.stopPropagation();addStepNote(${d.id},'${st.key}')" title="Add note" style="background:none;border:1px dashed var(--g300);color:var(--p);cursor:pointer;font-size:10px;margin-top:4px;padding:2px 6px;border-radius:4px"><i class="fas fa-plus"></i> Note</button>`:'';
+    return`<div class="ps ${cls}"><div class="pd"><i class="fas ${icon}"></i></div><div class="pl">${lbl}</div>${i===ci?'<div style="font-size:9px;color:var(--p);margin-top:2px">▲ Current</div>':''}${noteHtml}${addBtn}</div>`;
   }).join('');
+}
+function escHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function addStepNote(docId,stepKey){
+  const d=DB.docs.find(x=>x.id===docId);if(!d)return;
+  const stepLabel={head:'Head FSD',mid:'Pel / Ops / Air',dg:'DG',done:'Completed'}[stepKey]||stepKey;
+  const defStatus=stepKey==='mid'?(['pel','ops','air'].includes(d.status)?d.status:'pel'):stepKey;
+  const midSel=stepKey==='mid'?`<select id="snStatus" class="swal2-input" style="margin-bottom:8px"><option value="pel"${defStatus==='pel'?' selected':''}>Pel</option><option value="ops"${defStatus==='ops'?' selected':''}>Ops</option><option value="air"${defStatus==='air'?' selected':''}>Air</option></select>`:'';
+  const r=await Swal.fire({
+    title:`Add Note · ${stepLabel}`,
+    html:`${midSel}<textarea id="snNote" class="swal2-textarea" placeholder="Type note..."></textarea>`,
+    showCancelButton:true,confirmButtonText:'Save',confirmButtonColor:'var(--p)',
+    preConfirm:()=>{
+      const note=(document.getElementById('snNote').value||'').trim();
+      if(!note){Swal.showValidationMessage('Note is required');return false;}
+      const st=document.getElementById('snStatus');
+      return {note,status:st?st.value:defStatus};
+    }
+  });
+  if(!r.isConfirmed||!r.value)return;
+  if(!Array.isArray(d.statusNotes))d.statusNotes=[];
+  d.statusNotes.push({at:new Date().toISOString(),by:(CU&&CU.name)||'',status:r.value.status,note:r.value.note});
+  if(GAS_URL)await gasPost({action:'saveDocument',doc:d});
+  Swal.fire({icon:'success',title:'Note saved',toast:true,position:'top-end',showConfirmButton:false,timer:1300});
+  if(document.getElementById('moDet')?.classList.contains('open'))openDet(docId);
+  autoRefresh();
 }
 
 // ════════════════════════════════════════════════
@@ -600,7 +641,7 @@ function buildTkCards(all,tab){
         </div>
       </div>
       <div class="tc-b">
-        <div class="pipe" style="background:var(--g50);padding:10px;border-radius:var(--r)">${buildTL(d.status)}</div>
+        <div class="pipe" style="background:var(--g50);padding:10px;border-radius:var(--r)">${buildTL(d.status,d)}</div>
         ${d.statusNote?`<div style="background:#FFFDE7;border:1px solid #FBC02D;border-radius:var(--r);padding:9px 13px;font-size:12.5px;margin-top:8px"><i class="fas fa-sticky-note" style="color:var(--yw);margin-right:6px"></i>${d.statusNote}</div>`:''}
         <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
           <button class="btn btn-ol btn-sm" onclick="openDet(${d.id})"><i class="fas fa-eye"></i> Detail</button>
@@ -1103,7 +1144,7 @@ function renderSheetPage(s,el){
       <span style="font-size:11px;color:var(--g400)">Live · auto-refresh 30s · Updated <strong id="sht-${s.id}">${new Date(s.lastFetch||Date.now()).toLocaleTimeString()}</strong></span>
       <button class="btn btn-g btn-sm" onclick="refreshSh(${s.id})"><i class="fas fa-sync"></i> Refresh</button>
       <a class="btn btn-ol btn-sm" href="${s.rawUrl}" target="_blank"><i class="fas fa-external-link-alt"></i> Open</a>
-      <button class="btn btn-d btn-sm" onclick="rmSheet(${s.id})"><i class="fas fa-trash"></i> Remove</button>
+      ${CU&&CU.role==='admin'?`<button class="btn btn-d btn-sm" onclick="rmSheet(${s.id})"><i class="fas fa-trash"></i> Remove</button>`:''}
     </div>
   </div>
   <div class="cb" style="flex:1;padding:0;overflow:hidden">
