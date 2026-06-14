@@ -1123,7 +1123,11 @@ function addSheetFromCustomize(){
   const id=shNid++;
   sheetPages.push({id,name,rawUrl,embedUrl:toEmbedUrl(rawUrl),lastFetch:Date.now()});
   saveSheets();buildNav();
-  setTimeout(()=>goSheetPage(id),100);
+  const sN=document.getElementById('shN');if(sN)sN.value='';
+  const sU=document.getElementById('shU');if(sU)sU.value='';
+  const custEl=document.getElementById('pg-customize');if(custEl&&custEl.classList.contains('active'))renderCustomize(custEl);
+  Swal.fire({icon:'success',title:`Sheet "${name}" saved!`,toast:true,position:'top-end',showConfirmButton:false,timer:1800});
+  setTimeout(()=>goSheetPage(id),300);
 }
 
 document.getElementById('cpType').addEventListener('change',function(){
