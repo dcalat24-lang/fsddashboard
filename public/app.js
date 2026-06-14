@@ -356,7 +356,10 @@ function renderDash(el){
   },80);
 }
 
+function _restoreQuickHead(){const tb=document.getElementById('quickTb');if(!tb)return;const h=tb.parentElement.querySelector('thead');if(h)h.innerHTML='<tr><th>FSD No</th><th>Subject</th><th>Status</th><th>Date</th></tr>';}
+
 function showQF(filter,label){
+  _restoreQuickHead();
   document.getElementById('quickTitle').innerHTML=`<i class="fas fa-filter" style="color:var(--p)"></i> ${label}`;
   let docs;
   if(filter==='all') docs=[...DB.docs];
@@ -392,7 +395,6 @@ function showYearMonths(year){
   </tr>`).join('')+`<tr style="background:var(--g50);font-weight:700"><td>Total ${year}</td><td>${docs.length}</td><td colspan="2"></td></tr>`;
   openMo('moQuick');
 }
-function _restoreQuickHead(){const tb=document.getElementById('quickTb');if(!tb)return;const h=tb.parentElement.querySelector('thead');if(h)h.innerHTML='<tr><th>FSD No</th><th>Subject</th><th>Status</th><th>Date</th></tr>';
 
 // ════════════════════════════════════════════════
 //  ALL DOCUMENTS
