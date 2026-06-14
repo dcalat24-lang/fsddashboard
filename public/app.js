@@ -190,7 +190,7 @@ function buildNav(){
       h+=`<button class="ni" id="sni-${s.id}" onclick="goSheetPage(${s.id})">
         <span class="nic"><i class="fas fa-table" style="color:#FBC02D"></i></span>
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;max-width:130px">${s.name}</span>
-        <button onclick="event.stopPropagation();rmSheet(${s.id})" style="background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;font-size:11px;padding:2px 5px"><i class="fas fa-times"></i></button>
+        ${CU&&CU.role==='admin'?`<button onclick="event.stopPropagation();rmSheet(${s.id})" style="background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;font-size:11px;padding:2px 5px"><i class="fas fa-times"></i></button>`:''}
       </button>`;
     });
   }
@@ -344,7 +344,7 @@ function renderDash(el){
         plugins:{legend:{position:'bottom',labels:{font:{family:'Kanit',size:10},padding:8}}}}});
     const fc=document.getElementById('fyBar');
     if(fc){
-      const fyKeys=Object.keys(fyMap).filter(k=>!['2568','2569'].includes(k));
+      const fyKeys=Object.keys(fyMap);
       const fyl=fyKeys.slice();
       new Chart(fc,{type:'bar',data:{labels:fyl,datasets:[{label:'Docs',data:fyKeys.map(k=>fyMap[k]),
         backgroundColor:fyl.map((_,i)=>pal[i%pal.length]+'CC'),borderColor:fyl.map((_,i)=>pal[i%pal.length]),borderWidth:2,borderRadius:6}]},
@@ -1123,7 +1123,11 @@ function addSheetFromCustomize(){
   const id=shNid++;
   sheetPages.push({id,name,rawUrl,embedUrl:toEmbedUrl(rawUrl),lastFetch:Date.now()});
   saveSheets();buildNav();
-  setTimeout(()=>goSheetPage(id),100);
+  const sN=document.getElementById('shN');if(sN)sN.value='';
+  const sU=document.getElementById('shU');if(sU)sU.value='';
+  const custEl=document.getElementById('pg-customize');if(custEl&&custEl.classList.contains('active'))renderCustomize(custEl);
+  Swal.fire({icon:'success',title:`Sheet "${name}" saved!`,toast:true,position:'top-end',showConfirmButton:false,timer:1800});
+  setTimeout(()=>goSheetPage(id),300);
 }
 
 document.getElementById('cpType').addEventListener('change',function(){
