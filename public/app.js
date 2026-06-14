@@ -375,6 +375,25 @@ function showQF(filter,label){
   openMo('moQuick');
 }
 
+function showYearMonths(year){
+  const docs=DB.docs.filter(d=>d.fiscal===year);
+  const months=Array(12).fill(0);
+  docs.forEach(d=>{const dt=d.fsdDate||d.dcalDate||d.docDate;if(dt){const m=parseInt(String(dt).split('-')[1])-1;if(m>=0&&m<12)months[m]++;}});
+  const mN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('quickTitle').innerHTML=`<i class="fas fa-calendar-alt" style="color:var(--p)"></i> Year ${year} · Monthly Summary`;
+  const tb=document.getElementById('quickTb');
+  const thead=tb.parentElement.querySelector('thead');
+  if(thead)thead.innerHTML='<tr><th>Month</th><th>Documents</th><th colspan="2">Distribution</th></tr>';
+  const max=Math.max(...months,1);
+  tb.innerHTML=months.map((c,i)=>`<tr>
+    <td><strong>${mN[i]} ${year}</strong></td>
+    <td><span class="badge ${c>0?'bp':'bc'}">${c}</span></td>
+    <td colspan="2"><div style="background:var(--g100);border-radius:10px;height:10px;overflow:hidden;width:100%;max-width:220px"><div style="background:var(--p);height:100%;width:${(c/max*100).toFixed(1)}%"></div></div></td>
+  </tr>`).join('')+`<tr style="background:var(--g50);font-weight:700"><td>Total ${year}</td><td>${docs.length}</td><td colspan="2"></td></tr>`;
+  openMo('moQuick');
+}
+function _restoreQuickHead(){const tb=document.getElementById('quickTb');if(!tb)return;const h=tb.parentElement.querySelector('thead');if(h)h.innerHTML='<tr><th>FSD No</th><th>Subject</th><th>Status</th><th>Date</th></tr>';
+
 // ════════════════════════════════════════════════
 //  ALL DOCUMENTS
 // ════════════════════════════════════════════════
