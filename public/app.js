@@ -701,17 +701,22 @@ function refUsers(){
 }
 function openAddUser(){eUid=null;document.getElementById('moUT').textContent='Add User';['fu','fp','fn','fd'].forEach(id=>document.getElementById(id).value='');document.getElementById('frl').value='staff';openMo('moUser');}
 function openEditUser(id){const u=DB.users.find(x=>x.id===id);if(!u)return;eUid=id;document.getElementById('moUT').textContent='Edit User';document.getElementById('fu').value=u.u;document.getElementById('fp').value=u.p;document.getElementById('fn').value=u.name;document.getElementById('fd').value=u.dept;document.getElementById('frl').value=u.role;openMo('moUser');}
-function saveUser(){
+async function saveUser(){
   const u=document.getElementById('fu').value.trim(),p=document.getElementById('fp').value.trim(),n=document.getElementById('fn').value.trim(),d=document.getElementById('fd').value.trim(),r=document.getElementById('frl').value;
   if(!u||!p||!n||!d){Swal.fire({icon:'warning',title:'Please fill all required fields'});return;}
-  if(eUid){const usr=DB.users.find(x=>x.id===eUid);if(usr)Object.assign(usr,{u,p,name:n,dept:d,role:r});}
-  else DB.users.push({id:DB.nid.u++,u,p,name:n,dept:d,role:r});
+  let usrObj;
+  if(eUid){const usr=DB.users.find(x=>x.id===eUid);if(usr){Object.assign(usr,{u,p,name:n,dept:d,role:r});usrObj={...usr};}}
+  else {usrObj={u,p,name:n,dept:d,role:r};}
+  if(GAS_URL){
+    const res=await gasPost({action:'saveUser',user:eUid?{id:eUid,...usrObj}:usrObj});
+    if(!eUid){const newId=res?.id||DB.nid.u++;DB.users.push({id:newId,...usrObj});}
+  } else if(!eUid){DB.users.push({id:DB.nid.u++,...usrObj});}
   saveUsers();
   closeMo('moUser');
   Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
   autoRefresh();
 }
-function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){DB.users=DB.users.filter(x=>x.id!==id);saveUsers();autoRefresh();}});}
+function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(async r=>{if(r.isConfirmed){DB.users=DB.users.filter(x=>x.id!==id);saveUsers();if(GAS_URL)await gasPost({action:'deleteUser',id});autoRefresh();}});}
 
 // ════════════════════════════════════════════════
 //  ADD / EDIT DOCUMENT + UPLOAD TO DRIVE
