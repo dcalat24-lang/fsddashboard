@@ -1151,11 +1151,13 @@ document.getElementById('cpType').addEventListener('change',function(){
 // ════════════════════════════════════════════════
 //  GOOGLE SHEETS VIEWER (native iframe embed)
 // ════════════════════════════════════════════════
-function addSheetConfirm(){
+async function addSheetConfirm(){
   const name=v('shN'),rawUrl=v('shU');
   if(!name||!rawUrl){Swal.fire({icon:'warning',title:'Please enter name and URL'});return;}
-  const id=shNid++;
-  sheetPages.push({id,name,rawUrl,embedUrl:toEmbedUrl(rawUrl),lastFetch:Date.now()});
+  const embedUrl=toEmbedUrl(rawUrl);
+  let id=shNid++;
+  if(GAS_URL){const res=await gasPost({action:'saveSheet',sheet:{name,rawUrl,embedUrl}});if(res?.id)id=Number(res.id);}
+  sheetPages.push({id,name,rawUrl,embedUrl,lastFetch:Date.now()});
   saveSheets();closeMo('moSheet');buildNav();
   setTimeout(()=>goSheetPage(id),100);
 }
