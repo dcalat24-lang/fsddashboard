@@ -162,6 +162,20 @@ export const Route = createFileRoute("/api/public/gas")({
           if (error) return json({ docs: [], error: error.message }, 500);
           return json({ docs: (data ?? []).map(rowToDoc) });
         }
+        if (action === "getUsers") {
+          const t = supabaseAdmin.from("fsd_users") as unknown as { select: (s: string) => { order: (c: string, o: { ascending: boolean }) => Promise<{ data: Array<Record<string, unknown>> | null; error: { message: string } | null }> } };
+          const { data, error } = await t.select("*").order("id", { ascending: true });
+          if (error) return json({ users: [], error: error.message }, 500);
+          const users = (data ?? []).map((r) => ({ id: Number(r.id), u: r.username, p: r.password, name: r.name, dept: r.group_name ?? "", role: r.role, email: r.email ?? "" }));
+          return json({ users });
+        }
+        if (action === "getSheets") {
+          const t = supabaseAdmin.from("fsd_sheets") as unknown as { select: (s: string) => { order: (c: string, o: { ascending: boolean }) => Promise<{ data: Array<Record<string, unknown>> | null; error: { message: string } | null }> } };
+          const { data, error } = await t.select("*").order("id", { ascending: true });
+          if (error) return json({ sheets: [], error: error.message }, 500);
+          const sheets = (data ?? []).map((r) => ({ id: Number(r.id), name: r.name, rawUrl: r.raw_url, embedUrl: r.embed_url ?? "" }));
+          return json({ sheets });
+        }
         return json({ ok: true });
       },
       POST: async ({ request }) => {
