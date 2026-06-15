@@ -74,6 +74,69 @@ export type Database = {
         }
         Relationships: []
       }
+      fsd_sheets: {
+        Row: {
+          created_at: string
+          embed_url: string | null
+          id: number
+          name: string
+          raw_url: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          embed_url?: string | null
+          id?: number
+          name: string
+          raw_url: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          embed_url?: string | null
+          id?: number
+          name?: string
+          raw_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fsd_users: {
+        Row: {
+          created_at: string
+          email: string | null
+          group_name: string | null
+          id: number
+          name: string
+          password: string
+          role: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          group_name?: string | null
+          id?: number
+          name: string
+          password: string
+          role?: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          group_name?: string | null
+          id?: number
+          name?: string
+          password?: string
+          role?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

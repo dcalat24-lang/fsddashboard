@@ -121,9 +121,16 @@ async function loadFromSheet(){
         id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,
         docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,
         statusNotes:Array.isArray(d.statusNotes)?d.statusNotes:[],
-        owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:d.fiscal||String(new Date().getFullYear())
+        owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:toCE(d.fiscal)||String(new Date().getFullYear())
       }));
     }
+    // also sync users + sheets from backend (cross-device)
+    try{
+      const [uRes,sRes]=await Promise.all([fetch(`${GAS_URL}?action=getUsers`),fetch(`${GAS_URL}?action=getSheets`)]);
+      const uJ=await uRes.json();const sJ=await sRes.json();
+      if(Array.isArray(uJ.users)&&uJ.users.length){DB.users=uJ.users;DB.nid.u=Math.max(...uJ.users.map(x=>x.id))+1;saveUsers();}
+      if(Array.isArray(sJ.sheets)){sheetPages=sJ.sheets.map(s=>({...s,embedUrl:s.embedUrl||toEmbedUrl(s.rawUrl||''),lastFetch:null}));if(sheetPages.length)shNid=Math.max(...sheetPages.map(x=>x.id))+1;saveSheets();}
+    }catch(e){console.warn('sync users/sheets failed',e);}
   }catch(e){console.warn('GAS load failed, using demo data',e);}
   hideSpin(); showApp();
 }
@@ -694,17 +701,22 @@ function refUsers(){
 }
 function openAddUser(){eUid=null;document.getElementById('moUT').textContent='Add User';['fu','fp','fn','fd'].forEach(id=>document.getElementById(id).value='');document.getElementById('frl').value='staff';openMo('moUser');}
 function openEditUser(id){const u=DB.users.find(x=>x.id===id);if(!u)return;eUid=id;document.getElementById('moUT').textContent='Edit User';document.getElementById('fu').value=u.u;document.getElementById('fp').value=u.p;document.getElementById('fn').value=u.name;document.getElementById('fd').value=u.dept;document.getElementById('frl').value=u.role;openMo('moUser');}
-function saveUser(){
+async function saveUser(){
   const u=document.getElementById('fu').value.trim(),p=document.getElementById('fp').value.trim(),n=document.getElementById('fn').value.trim(),d=document.getElementById('fd').value.trim(),r=document.getElementById('frl').value;
   if(!u||!p||!n||!d){Swal.fire({icon:'warning',title:'Please fill all required fields'});return;}
-  if(eUid){const usr=DB.users.find(x=>x.id===eUid);if(usr)Object.assign(usr,{u,p,name:n,dept:d,role:r});}
-  else DB.users.push({id:DB.nid.u++,u,p,name:n,dept:d,role:r});
+  let usrObj;
+  if(eUid){const usr=DB.users.find(x=>x.id===eUid);if(usr){Object.assign(usr,{u,p,name:n,dept:d,role:r});usrObj={...usr};}}
+  else {usrObj={u,p,name:n,dept:d,role:r};}
+  if(GAS_URL){
+    const res=await gasPost({action:'saveUser',user:eUid?{id:eUid,...usrObj}:usrObj});
+    if(!eUid){const newId=res?.id||DB.nid.u++;DB.users.push({id:newId,...usrObj});}
+  } else if(!eUid){DB.users.push({id:DB.nid.u++,...usrObj});}
   saveUsers();
   closeMo('moUser');
   Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
   autoRefresh();
 }
-function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){DB.users=DB.users.filter(x=>x.id!==id);saveUsers();autoRefresh();}});}
+function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(async r=>{if(r.isConfirmed){DB.users=DB.users.filter(x=>x.id!==id);saveUsers();if(GAS_URL)await gasPost({action:'deleteUser',id});autoRefresh();}});}
 
 // ════════════════════════════════════════════════
 //  ADD / EDIT DOCUMENT + UPLOAD TO DRIVE
@@ -1117,11 +1129,13 @@ function addCustomPage(){
   Swal.fire({icon:'success',title:`Page "${name}" added!`,toast:true,position:'top-end',showConfirmButton:false,timer:2000});
 }
 
-function addSheetFromCustomize(){
+async function addSheetFromCustomize(){
   const name=v('shN'),rawUrl=v('shU');
   if(!name||!rawUrl){Swal.fire({icon:'warning',title:'Please enter name and URL'});return;}
-  const id=shNid++;
-  sheetPages.push({id,name,rawUrl,embedUrl:toEmbedUrl(rawUrl),lastFetch:Date.now()});
+  const embedUrl=toEmbedUrl(rawUrl);
+  let id=shNid++;
+  if(GAS_URL){const res=await gasPost({action:'saveSheet',sheet:{name,rawUrl,embedUrl}});if(res?.id)id=Number(res.id);}
+  sheetPages.push({id,name,rawUrl,embedUrl,lastFetch:Date.now()});
   saveSheets();buildNav();
   const sN=document.getElementById('shN');if(sN)sN.value='';
   const sU=document.getElementById('shU');if(sU)sU.value='';
@@ -1137,11 +1151,13 @@ document.getElementById('cpType').addEventListener('change',function(){
 // ════════════════════════════════════════════════
 //  GOOGLE SHEETS VIEWER (native iframe embed)
 // ════════════════════════════════════════════════
-function addSheetConfirm(){
+async function addSheetConfirm(){
   const name=v('shN'),rawUrl=v('shU');
   if(!name||!rawUrl){Swal.fire({icon:'warning',title:'Please enter name and URL'});return;}
-  const id=shNid++;
-  sheetPages.push({id,name,rawUrl,embedUrl:toEmbedUrl(rawUrl),lastFetch:Date.now()});
+  const embedUrl=toEmbedUrl(rawUrl);
+  let id=shNid++;
+  if(GAS_URL){const res=await gasPost({action:'saveSheet',sheet:{name,rawUrl,embedUrl}});if(res?.id)id=Number(res.id);}
+  sheetPages.push({id,name,rawUrl,embedUrl,lastFetch:Date.now()});
   saveSheets();closeMo('moSheet');buildNav();
   setTimeout(()=>goSheetPage(id),100);
 }
@@ -1190,7 +1206,7 @@ function refreshSh(id){
   s.lastFetch=Date.now();
   const t=document.getElementById('sht-'+id);if(t)t.textContent=new Date().toLocaleTimeString();
 }
-function rmSheet(id){Swal.fire({title:'Remove Sheet?',icon:'warning',showCancelButton:true,confirmButtonText:'Remove',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){sheetPages=sheetPages.filter(x=>x.id!==id);if(shTimers[id]){clearInterval(shTimers[id]);delete shTimers[id];}saveSheets();const old=document.getElementById('shpg-'+id);if(old)old.remove();buildNav();goPage('dash');}});}
+function rmSheet(id){Swal.fire({title:'Remove Sheet?',icon:'warning',showCancelButton:true,confirmButtonText:'Remove',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(async r=>{if(r.isConfirmed){sheetPages=sheetPages.filter(x=>x.id!==id);if(shTimers[id]){clearInterval(shTimers[id]);delete shTimers[id];}saveSheets();if(GAS_URL)await gasPost({action:'deleteSheet',id});const old=document.getElementById('shpg-'+id);if(old)old.remove();buildNav();goPage('dash');}});}
 
 // ════════════════════════════════════════════════
 //  FILE DRAG & DROP

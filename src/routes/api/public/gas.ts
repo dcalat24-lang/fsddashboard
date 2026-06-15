@@ -162,6 +162,20 @@ export const Route = createFileRoute("/api/public/gas")({
           if (error) return json({ docs: [], error: error.message }, 500);
           return json({ docs: (data ?? []).map(rowToDoc) });
         }
+        if (action === "getUsers") {
+          const t = supabaseAdmin.from("fsd_users") as unknown as { select: (s: string) => { order: (c: string, o: { ascending: boolean }) => Promise<{ data: Array<Record<string, unknown>> | null; error: { message: string } | null }> } };
+          const { data, error } = await t.select("*").order("id", { ascending: true });
+          if (error) return json({ users: [], error: error.message }, 500);
+          const users = (data ?? []).map((r) => ({ id: Number(r.id), u: r.username, p: r.password, name: r.name, dept: r.group_name ?? "", role: r.role, email: r.email ?? "" }));
+          return json({ users });
+        }
+        if (action === "getSheets") {
+          const t = supabaseAdmin.from("fsd_sheets") as unknown as { select: (s: string) => { order: (c: string, o: { ascending: boolean }) => Promise<{ data: Array<Record<string, unknown>> | null; error: { message: string } | null }> } };
+          const { data, error } = await t.select("*").order("id", { ascending: true });
+          if (error) return json({ sheets: [], error: error.message }, 500);
+          const sheets = (data ?? []).map((r) => ({ id: Number(r.id), name: r.name, rawUrl: r.raw_url, embedUrl: r.embed_url ?? "" }));
+          return json({ sheets });
+        }
         return json({ ok: true });
       },
       POST: async ({ request }) => {
@@ -204,6 +218,59 @@ export const Route = createFileRoute("/api/public/gas")({
             .from("fsd_documents")
             .delete()
             .eq("id", Number(payload.id));
+          if (error) return json({ error: error.message }, 500);
+          return json({ ok: true });
+        }
+
+        if (action === "saveUser") {
+          const u = (payload.user ?? {}) as Record<string, unknown>;
+          const row = {
+            username: String(u.u ?? ""),
+            password: String(u.p ?? ""),
+            name: String(u.name ?? ""),
+            group_name: String(u.dept ?? ""),
+            role: String(u.role ?? "staff"),
+            email: u.email == null ? null : String(u.email),
+          };
+          const t = supabaseAdmin.from("fsd_users") as unknown as {
+            update: (v: Record<string, unknown>) => { eq: (c: string, v: unknown) => { select: () => { maybeSingle: () => Promise<{ data: { id: number } | null; error: { message: string } | null }> } } };
+            insert: (v: Record<string, unknown>) => { select: () => { single: () => Promise<{ data: { id: number }; error: { message: string } | null }> } };
+          };
+          if (u.id) {
+            const { data, error } = await t.update({ ...row, updated_at: new Date().toISOString() }).eq("id", Number(u.id)).select().maybeSingle();
+            if (error) return json({ error: error.message }, 500);
+            return json({ id: data?.id });
+          }
+          const { data, error } = await t.insert(row).select().single();
+          if (error) return json({ error: error.message }, 500);
+          return json({ id: data.id });
+        }
+
+        if (action === "deleteUser") {
+          const { error } = await supabaseAdmin.from("fsd_users").delete().eq("id", Number(payload.id));
+          if (error) return json({ error: error.message }, 500);
+          return json({ ok: true });
+        }
+
+        if (action === "saveSheet") {
+          const s = (payload.sheet ?? {}) as Record<string, unknown>;
+          const row = { name: String(s.name ?? ""), raw_url: String(s.rawUrl ?? ""), embed_url: String(s.embedUrl ?? "") };
+          const t = supabaseAdmin.from("fsd_sheets") as unknown as {
+            update: (v: Record<string, unknown>) => { eq: (c: string, v: unknown) => { select: () => { maybeSingle: () => Promise<{ data: { id: number } | null; error: { message: string } | null }> } } };
+            insert: (v: Record<string, unknown>) => { select: () => { single: () => Promise<{ data: { id: number }; error: { message: string } | null }> } };
+          };
+          if (s.id) {
+            const { data, error } = await t.update({ ...row, updated_at: new Date().toISOString() }).eq("id", Number(s.id)).select().maybeSingle();
+            if (error) return json({ error: error.message }, 500);
+            return json({ id: data?.id });
+          }
+          const { data, error } = await t.insert(row).select().single();
+          if (error) return json({ error: error.message }, 500);
+          return json({ id: data.id });
+        }
+
+        if (action === "deleteSheet") {
+          const { error } = await supabaseAdmin.from("fsd_sheets").delete().eq("id", Number(payload.id));
           if (error) return json({ error: error.message }, 500);
           return json({ ok: true });
         }
