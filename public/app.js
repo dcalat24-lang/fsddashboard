@@ -721,13 +721,15 @@ async function saveUser(){
   if(GAS_URL){
     const res=await gasPost({action:'saveUser',user:eUid?{id:eUid,...usrObj}:usrObj});
     if(!eUid){const newId=res?.id||DB.nid.u++;DB.users.push({id:newId,...usrObj});}
+    // re-pull from backend so all devices stay in sync
+    try{const ur=await fetch(`${GAS_URL}?action=getUsers`);const uj=await ur.json();if(Array.isArray(uj.users)&&uj.users.length){DB.users=uj.users;DB.nid.u=Math.max(...uj.users.map(x=>x.id))+1;}}catch(_){}
   } else if(!eUid){DB.users.push({id:DB.nid.u++,...usrObj});}
   saveUsers();
   closeMo('moUser');
   Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
   autoRefresh();
 }
-function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(async r=>{if(r.isConfirmed){DB.users=DB.users.filter(x=>x.id!==id);saveUsers();if(GAS_URL)await gasPost({action:'deleteUser',id});autoRefresh();}});}
+function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(async r=>{if(r.isConfirmed){if(GAS_URL)await gasPost({action:'deleteUser',id});DB.users=DB.users.filter(x=>x.id!==id);saveUsers();try{if(GAS_URL){const ur=await fetch(`${GAS_URL}?action=getUsers`);const uj=await ur.json();if(Array.isArray(uj.users)){DB.users=uj.users;DB.nid.u=(DB.users.length?Math.max(...DB.users.map(x=>x.id)):0)+1;saveUsers();}}}catch(_){}autoRefresh();}});}
 
 // ════════════════════════════════════════════════
 //  ADD / EDIT DOCUMENT + UPLOAD TO DRIVE
