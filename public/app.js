@@ -1206,7 +1206,7 @@ function refreshSh(id){
   s.lastFetch=Date.now();
   const t=document.getElementById('sht-'+id);if(t)t.textContent=new Date().toLocaleTimeString();
 }
-function rmSheet(id){Swal.fire({title:'Remove Sheet?',icon:'warning',showCancelButton:true,confirmButtonText:'Remove',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(r=>{if(r.isConfirmed){sheetPages=sheetPages.filter(x=>x.id!==id);if(shTimers[id]){clearInterval(shTimers[id]);delete shTimers[id];}saveSheets();const old=document.getElementById('shpg-'+id);if(old)old.remove();buildNav();goPage('dash');}});}
+function rmSheet(id){Swal.fire({title:'Remove Sheet?',icon:'warning',showCancelButton:true,confirmButtonText:'Remove',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(async r=>{if(r.isConfirmed){sheetPages=sheetPages.filter(x=>x.id!==id);if(shTimers[id]){clearInterval(shTimers[id]);delete shTimers[id];}saveSheets();if(GAS_URL)await gasPost({action:'deleteSheet',id});const old=document.getElementById('shpg-'+id);if(old)old.remove();buildNav();goPage('dash');}});}
 
 // ════════════════════════════════════════════════
 //  FILE DRAG & DROP
