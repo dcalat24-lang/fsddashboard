@@ -1129,11 +1129,13 @@ function addCustomPage(){
   Swal.fire({icon:'success',title:`Page "${name}" added!`,toast:true,position:'top-end',showConfirmButton:false,timer:2000});
 }
 
-function addSheetFromCustomize(){
+async function addSheetFromCustomize(){
   const name=v('shN'),rawUrl=v('shU');
   if(!name||!rawUrl){Swal.fire({icon:'warning',title:'Please enter name and URL'});return;}
-  const id=shNid++;
-  sheetPages.push({id,name,rawUrl,embedUrl:toEmbedUrl(rawUrl),lastFetch:Date.now()});
+  const embedUrl=toEmbedUrl(rawUrl);
+  let id=shNid++;
+  if(GAS_URL){const res=await gasPost({action:'saveSheet',sheet:{name,rawUrl,embedUrl}});if(res?.id)id=Number(res.id);}
+  sheetPages.push({id,name,rawUrl,embedUrl,lastFetch:Date.now()});
   saveSheets();buildNav();
   const sN=document.getElementById('shN');if(sN)sN.value='';
   const sU=document.getElementById('shU');if(sU)sU.value='';
