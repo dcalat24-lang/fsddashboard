@@ -231,6 +231,7 @@ export const Route = createFileRoute("/api/public/gas")({
             group_name: String(u.dept ?? ""),
             role: String(u.role ?? "staff"),
             email: u.email == null ? null : String(u.email),
+            photo: u.photo == null ? null : String(u.photo),
           };
           const t = supabaseAdmin.from("fsd_users") as unknown as {
             update: (v: Record<string, unknown>) => { eq: (c: string, v: unknown) => { select: () => { maybeSingle: () => Promise<{ data: { id: number } | null; error: { message: string } | null }> } } };
