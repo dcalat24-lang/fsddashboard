@@ -109,6 +109,7 @@ export type Database = {
           id: number
           name: string
           password: string
+          photo: string | null
           role: string
           updated_at: string
           username: string
@@ -120,6 +121,7 @@ export type Database = {
           id?: number
           name: string
           password: string
+          photo?: string | null
           role?: string
           updated_at?: string
           username: string
@@ -131,6 +133,7 @@ export type Database = {
           id?: number
           name?: string
           password?: string
+          photo?: string | null
           role?: string
           updated_at?: string
           username?: string

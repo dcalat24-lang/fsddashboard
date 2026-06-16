@@ -165,14 +165,21 @@ async function loadFromSheet(){
 function showApp(){
   document.getElementById('LP').style.display='none';
   document.getElementById('AP').style.display='block';
-  const ini=initials(CU.name);
-  ['sbAva','tAva'].forEach(id=>document.getElementById(id).textContent=ini);
+  applyUserAvatar(CU);
   document.getElementById('sbName').textContent=CU.name;
-  document.getElementById('sbRole').textContent=CU.role==='admin'?'Admin':'Staff';
   document.getElementById('tDate').textContent=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   buildNav();
   const saved=lsGet(LS.page);
   if(saved&&saved.key){restorePage(saved);} else goPage('dash');
+  startLiveSync();
+}
+function applyUserAvatar(u){
+  const ini=initials(u?.name||'');
+  ['sbAva','tAva'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    if(u&&u.photo){el.innerHTML=`<img src="${u.photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;el.style.padding='0';}
+    else {el.textContent=ini;el.innerHTML=ini;}
+  });
 }
 function restorePage(s){
   if(s.type==='sheet'){const sp=sheetPages.find(x=>String(x.id)===String(s.key));if(sp){goSheetPage(sp.id);return;}}
@@ -190,16 +197,36 @@ function reRenderCurrent(){
 async function autoRefresh(){
   if(GAS_URL){
     try{
-      const res=await fetch(`${GAS_URL}?action=getDocuments`);
-      const json=await res.json();
+      const [dRes,uRes,sRes]=await Promise.all([
+        fetch(`${GAS_URL}?action=getDocuments`),
+        fetch(`${GAS_URL}?action=getUsers`),
+        fetch(`${GAS_URL}?action=getSheets`),
+      ]);
+      const json=await dRes.json();
+      const uJ=await uRes.json();
+      const sJ=await sRes.json();
       if(json.docs){
         DB.docs=json.docs.map(d=>({id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,statusNotes:Array.isArray(d.statusNotes)?d.statusNotes:[],owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:toCE(d.fiscal)||String(new Date().getFullYear())}));
+      }
+      if(Array.isArray(uJ.users)&&uJ.users.length){
+        DB.users=uJ.users;DB.nid.u=Math.max(...uJ.users.map(x=>x.id))+1;saveUsers();
+        if(CU){const me=DB.users.find(x=>x.u===CU.u);if(me){Object.assign(CU,me);applyUserAvatar(CU);document.getElementById('sbName').textContent=CU.name;}}
+      }
+      if(Array.isArray(sJ.sheets)){
+        const old=JSON.stringify(sheetPages.map(s=>s.id));
+        sheetPages=sJ.sheets.map(s=>({...s,embedUrl:s.embedUrl||toEmbedUrl(s.rawUrl||''),lastFetch:null}));
+        if(sheetPages.length)shNid=Math.max(...sheetPages.map(x=>x.id))+1;
+        saveSheets();
+        if(JSON.stringify(sheetPages.map(s=>s.id))!==old)buildNav();
       }
     }catch(e){}
   }
   reRenderCurrent();
 }
+let liveSyncTimer=null;
+function startLiveSync(){if(liveSyncTimer)clearInterval(liveSyncTimer);liveSyncTimer=setInterval(()=>{if(document.visibilityState==='visible'&&CU)autoRefresh();},15000);}
 function initials(n){const a=(n||'').split(' ');return((a[0]?.[0]||'')+(a[1]?.[0]||'')).toUpperCase()||'?';}
+
 
 // ════════════════════════════════════════════════
 //  NAV
@@ -716,21 +743,28 @@ function renderUsers(el){
 }
 function refUsers(){
   const tb=document.getElementById('userTb');if(!tb)return;
-  tb.innerHTML=DB.users.map((u,i)=>`<tr><td>${i+1}</td><td><strong>${u.u}</strong></td><td>${u.name}</td><td>${u.dept}</td>
+  const avatar=u=>u.photo?`<img src="${u.photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px">`:`<span style="display:inline-flex;width:32px;height:32px;border-radius:50%;background:var(--g100);color:var(--g600);align-items:center;justify-content:center;font-size:11px;font-weight:600;vertical-align:middle;margin-right:8px">${initials(u.name)}</span>`;
+  tb.innerHTML=DB.users.map((u,i)=>`<tr><td>${i+1}</td><td><strong>${u.u}</strong></td><td>${avatar(u)}${u.name}</td><td>${u.dept}</td>
     <td><span class="badge ${u.role==='admin'?'bp':'bc'}">${u.role==='admin'?'<i class="fas fa-shield-alt"></i> Admin':'<i class="fas fa-user"></i> Staff'}</span></td>
     <td><div style="display:flex;gap:4px">
       <button class="btn btn-ol btn-sm btn-ico" onclick="openEditUser(${u.id})"><i class="fas fa-edit"></i></button>
       <button class="btn btn-d btn-sm btn-ico"  onclick="delUser(${u.id})"><i class="fas fa-trash"></i></button>
     </div></td></tr>`).join('');
 }
-function openAddUser(){eUid=null;document.getElementById('moUT').textContent='Add User';['fu','fp','fn','fd'].forEach(id=>document.getElementById(id).value='');document.getElementById('frl').value='staff';openMo('moUser');}
-function openEditUser(id){const u=DB.users.find(x=>x.id===id);if(!u)return;eUid=id;document.getElementById('moUT').textContent='Edit User';document.getElementById('fu').value=u.u;document.getElementById('fp').value=u.p;document.getElementById('fn').value=u.name;document.getElementById('fd').value=u.dept;document.getElementById('frl').value=u.role;openMo('moUser');}
+let _userPhoto='';
+function clearUserPhoto(){_userPhoto='';document.getElementById('fph').value='';document.getElementById('fphPrevRow').style.display='none';}
+function setUserPhotoPreview(dataUrl){_userPhoto=dataUrl||'';const row=document.getElementById('fphPrevRow');if(!dataUrl){row.style.display='none';return;}document.getElementById('fphPrev').src=dataUrl;row.style.display='';}
+function onUserPhoto(e){const f=e.target.files&&e.target.files[0];if(!f)return;resizeImageToDataUrl(f,256).then(setUserPhotoPreview);}
+function resizeImageToDataUrl(file,max){return new Promise(res=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{const s=Math.min(1,max/Math.max(img.width,img.height));const w=Math.round(img.width*s),h=Math.round(img.height*s);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',0.85));};img.src=ev.target.result;};r.readAsDataURL(file);});}
+function openAddUser(){eUid=null;document.getElementById('moUT').textContent='Add User';['fu','fp','fn','fd'].forEach(id=>document.getElementById(id).value='');document.getElementById('frl').value='staff';clearUserPhoto();openMo('moUser');}
+function openEditUser(id){const u=DB.users.find(x=>x.id===id);if(!u)return;eUid=id;document.getElementById('moUT').textContent='Edit User';document.getElementById('fu').value=u.u;document.getElementById('fp').value=u.p;document.getElementById('fn').value=u.name;document.getElementById('fd').value=u.dept;document.getElementById('frl').value=u.role;document.getElementById('fph').value='';if(u.photo){setUserPhotoPreview(u.photo);}else{clearUserPhoto();}openMo('moUser');}
 async function saveUser(){
   const u=document.getElementById('fu').value.trim(),p=document.getElementById('fp').value.trim(),n=document.getElementById('fn').value.trim(),d=document.getElementById('fd').value.trim(),r=document.getElementById('frl').value;
   if(!u||!p||!n||!d){Swal.fire({icon:'warning',title:'Please fill all required fields'});return;}
+  const photo=_userPhoto||'';
   let usrObj;
-  if(eUid){const usr=DB.users.find(x=>x.id===eUid);if(usr){Object.assign(usr,{u,p,name:n,dept:d,role:r});usrObj={...usr};}}
-  else {usrObj={u,p,name:n,dept:d,role:r};}
+  if(eUid){const usr=DB.users.find(x=>x.id===eUid);if(usr){Object.assign(usr,{u,p,name:n,dept:d,role:r,photo});usrObj={...usr};}}
+  else {usrObj={u,p,name:n,dept:d,role:r,photo};}
   if(GAS_URL){
     const res=await gasPost({action:'saveUser',user:eUid?{id:eUid,...usrObj}:usrObj});
     if(!eUid){const newId=res?.id||DB.nid.u++;DB.users.push({id:newId,...usrObj});}
@@ -877,19 +911,30 @@ function refMyDocs(){
 }
 function dlDoc(id){const d=DB.docs.find(x=>x.id===id);if(!d||!d.files.length){Swal.fire({icon:'info',title:'No files attached'});return;}d.files.forEach(f=>{if(f.url&&f.url!=='#')window.open(f.url,'_blank');});}
 function renderProfile(el){
+  const me=DB.users.find(u=>u.id===CU.id)||CU;
+  _profilePhoto=me.photo||'';
   el.innerHTML=`<div class="card" style="max-width:460px"><div class="ch"><h3><i class="fas fa-user-edit" style="color:var(--cy)"></i> Edit Profile</h3></div><div class="cb">
+    <div class="fr"><div class="ff"><label>Profile Photo</label>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><img id="ppPrev" src="${me.photo||''}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:1px solid var(--g200);background:var(--g50);${me.photo?'':'display:none'}"><div style="display:flex;flex-direction:column;gap:6px"><input type="file" id="pph" accept="image/*" onchange="onProfilePhoto(event)"><button type="button" class="btn btn-ol btn-sm" onclick="_profilePhoto='';document.getElementById('ppPrev').style.display='none';document.getElementById('pph').value='';"><i class="fas fa-times"></i> Remove Photo</button></div></div>
+    </div></div>
     <div class="fr"><div class="ff"><label>Username</label><input id="pu" value="${CU.u}"></div></div>
     <div class="fr"><div class="ff"><label>New Password <span style="font-weight:400;color:var(--g400)">(leave blank to keep)</span></label><input type="password" id="pp" placeholder="New password"></div></div>
     <div class="fr"><div class="ff"><label>Full Name</label><input id="pn" value="${CU.name}"></div></div>
-    <div class="fr"><div class="ff"><label>Group</label><input id="pdpt" value="${DB.users.find(u=>u.id===CU.id)?.dept||''}"></div></div>
+    <div class="fr"><div class="ff"><label>Group</label><input id="pdpt" value="${me.dept||''}"></div></div>
     <button class="btn btn-p" onclick="saveProfile()"><i class="fas fa-save"></i> Save Changes</button>
   </div></div>`;
 }
-function saveProfile(){
+let _profilePhoto='';
+function onProfilePhoto(e){const f=e.target.files&&e.target.files[0];if(!f)return;resizeImageToDataUrl(f,256).then(d=>{_profilePhoto=d;const im=document.getElementById('ppPrev');im.src=d;im.style.display='';});}
+async function saveProfile(){
   const u=v('pu'),p=v('pp'),n=v('pn'),dpt=v('pdpt');
   if(!u||!n){Swal.fire({icon:'warning',title:'Username and name required'});return;}
-  const usr=DB.users.find(x=>x.id===CU.id);if(usr){usr.u=u;usr.name=n;usr.dept=dpt;if(p)usr.p=p;}
-  CU.u=u;CU.name=n;const ini=initials(n);['sbAva','tAva'].forEach(id=>document.getElementById(id).textContent=ini);document.getElementById('sbName').textContent=n;
+  const usr=DB.users.find(x=>x.id===CU.id);if(usr){usr.u=u;usr.name=n;usr.dept=dpt;usr.photo=_profilePhoto;if(p)usr.p=p;}
+  CU.u=u;CU.name=n;CU.photo=_profilePhoto;if(p)CU.p=p;
+  if(GAS_URL){try{await gasPost({action:'saveUser',user:{id:CU.id,u,p:p||CU.p,name:n,dept:dpt,role:CU.role,email:CU.email||'',photo:_profilePhoto}});}catch(_){}}
+  saveUsers();
+  applyUserAvatar(CU);
+  document.getElementById('sbName').textContent=n;
   Swal.fire({icon:'success',title:'Profile updated',toast:true,position:'top-end',showConfirmButton:false,timer:1800});
 }
 

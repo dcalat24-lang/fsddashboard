@@ -47,7 +47,6 @@
         <div class="sb-icon"><i class="fas fa-plane"></i></div>
         <div>
           <div class="sb-nm">FSD DASHBOARD</div>
-          <div class="sb-sub">Document Portal</div>
         </div>
       </div>
     </div>
@@ -55,7 +54,6 @@
       <div class="sb-ava" id="sbAva">A</div>
       <div>
         <div class="sb-un" id="sbName">Admin</div>
-        <div class="sb-role" id="sbRole">Admin</div>
       </div>
     </div>
     <nav class="sb-nav" id="sbNav"></nav>
@@ -100,9 +98,17 @@
         <div class="ff"><label>Full Name *</label><input id="fn" placeholder="First Last"></div>
         <div class="ff"><label>Group *</label><input id="fd" placeholder="Group"></div>
       </div>
-      <div class="fr">
+      <div class="fr c2">
         <div class="ff"><label>Role</label>
           <select id="frl"><option value="staff">Staff</option><option value="admin">Admin</option></select>
+        </div>
+        <div class="ff"><label>Profile Photo</label>
+          <input type="file" id="fph" accept="image/*" onchange="onUserPhoto(event)">
+        </div>
+      </div>
+      <div class="fr" id="fphPrevRow" style="display:none">
+        <div class="ff"><label>Preview</label>
+          <div style="display:flex;align-items:center;gap:10px"><img id="fphPrev" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:1px solid var(--g200)"><button type="button" class="btn btn-ol btn-sm" onclick="clearUserPhoto()"><i class="fas fa-times"></i> Remove</button></div>
         </div>
       </div>
     </div>

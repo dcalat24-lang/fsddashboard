@@ -1,0 +1,1 @@
+ALTER TABLE public.fsd_users ADD COLUMN IF NOT EXISTS photo TEXT;
