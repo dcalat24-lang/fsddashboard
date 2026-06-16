@@ -165,14 +165,21 @@ async function loadFromSheet(){
 function showApp(){
   document.getElementById('LP').style.display='none';
   document.getElementById('AP').style.display='block';
-  const ini=initials(CU.name);
-  ['sbAva','tAva'].forEach(id=>document.getElementById(id).textContent=ini);
+  applyUserAvatar(CU);
   document.getElementById('sbName').textContent=CU.name;
-  document.getElementById('sbRole').textContent=CU.role==='admin'?'Admin':'Staff';
   document.getElementById('tDate').textContent=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   buildNav();
   const saved=lsGet(LS.page);
   if(saved&&saved.key){restorePage(saved);} else goPage('dash');
+  startLiveSync();
+}
+function applyUserAvatar(u){
+  const ini=initials(u?.name||'');
+  ['sbAva','tAva'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    if(u&&u.photo){el.innerHTML=`<img src="${u.photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;el.style.padding='0';}
+    else {el.textContent=ini;el.innerHTML=ini;}
+  });
 }
 function restorePage(s){
   if(s.type==='sheet'){const sp=sheetPages.find(x=>String(x.id)===String(s.key));if(sp){goSheetPage(sp.id);return;}}
