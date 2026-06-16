@@ -743,21 +743,28 @@ function renderUsers(el){
 }
 function refUsers(){
   const tb=document.getElementById('userTb');if(!tb)return;
-  tb.innerHTML=DB.users.map((u,i)=>`<tr><td>${i+1}</td><td><strong>${u.u}</strong></td><td>${u.name}</td><td>${u.dept}</td>
+  const avatar=u=>u.photo?`<img src="${u.photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px">`:`<span style="display:inline-flex;width:32px;height:32px;border-radius:50%;background:var(--g100);color:var(--g600);align-items:center;justify-content:center;font-size:11px;font-weight:600;vertical-align:middle;margin-right:8px">${initials(u.name)}</span>`;
+  tb.innerHTML=DB.users.map((u,i)=>`<tr><td>${i+1}</td><td><strong>${u.u}</strong></td><td>${avatar(u)}${u.name}</td><td>${u.dept}</td>
     <td><span class="badge ${u.role==='admin'?'bp':'bc'}">${u.role==='admin'?'<i class="fas fa-shield-alt"></i> Admin':'<i class="fas fa-user"></i> Staff'}</span></td>
     <td><div style="display:flex;gap:4px">
       <button class="btn btn-ol btn-sm btn-ico" onclick="openEditUser(${u.id})"><i class="fas fa-edit"></i></button>
       <button class="btn btn-d btn-sm btn-ico"  onclick="delUser(${u.id})"><i class="fas fa-trash"></i></button>
     </div></td></tr>`).join('');
 }
-function openAddUser(){eUid=null;document.getElementById('moUT').textContent='Add User';['fu','fp','fn','fd'].forEach(id=>document.getElementById(id).value='');document.getElementById('frl').value='staff';openMo('moUser');}
-function openEditUser(id){const u=DB.users.find(x=>x.id===id);if(!u)return;eUid=id;document.getElementById('moUT').textContent='Edit User';document.getElementById('fu').value=u.u;document.getElementById('fp').value=u.p;document.getElementById('fn').value=u.name;document.getElementById('fd').value=u.dept;document.getElementById('frl').value=u.role;openMo('moUser');}
+let _userPhoto='';
+function clearUserPhoto(){_userPhoto='';document.getElementById('fph').value='';document.getElementById('fphPrevRow').style.display='none';}
+function setUserPhotoPreview(dataUrl){_userPhoto=dataUrl||'';const row=document.getElementById('fphPrevRow');if(!dataUrl){row.style.display='none';return;}document.getElementById('fphPrev').src=dataUrl;row.style.display='';}
+function onUserPhoto(e){const f=e.target.files&&e.target.files[0];if(!f)return;resizeImageToDataUrl(f,256).then(setUserPhotoPreview);}
+function resizeImageToDataUrl(file,max){return new Promise(res=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{const s=Math.min(1,max/Math.max(img.width,img.height));const w=Math.round(img.width*s),h=Math.round(img.height*s);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',0.85));};img.src=ev.target.result;};r.readAsDataURL(file);});}
+function openAddUser(){eUid=null;document.getElementById('moUT').textContent='Add User';['fu','fp','fn','fd'].forEach(id=>document.getElementById(id).value='');document.getElementById('frl').value='staff';clearUserPhoto();openMo('moUser');}
+function openEditUser(id){const u=DB.users.find(x=>x.id===id);if(!u)return;eUid=id;document.getElementById('moUT').textContent='Edit User';document.getElementById('fu').value=u.u;document.getElementById('fp').value=u.p;document.getElementById('fn').value=u.name;document.getElementById('fd').value=u.dept;document.getElementById('frl').value=u.role;document.getElementById('fph').value='';if(u.photo){setUserPhotoPreview(u.photo);}else{clearUserPhoto();}openMo('moUser');}
 async function saveUser(){
   const u=document.getElementById('fu').value.trim(),p=document.getElementById('fp').value.trim(),n=document.getElementById('fn').value.trim(),d=document.getElementById('fd').value.trim(),r=document.getElementById('frl').value;
   if(!u||!p||!n||!d){Swal.fire({icon:'warning',title:'Please fill all required fields'});return;}
+  const photo=_userPhoto||'';
   let usrObj;
-  if(eUid){const usr=DB.users.find(x=>x.id===eUid);if(usr){Object.assign(usr,{u,p,name:n,dept:d,role:r});usrObj={...usr};}}
-  else {usrObj={u,p,name:n,dept:d,role:r};}
+  if(eUid){const usr=DB.users.find(x=>x.id===eUid);if(usr){Object.assign(usr,{u,p,name:n,dept:d,role:r,photo});usrObj={...usr};}}
+  else {usrObj={u,p,name:n,dept:d,role:r,photo};}
   if(GAS_URL){
     const res=await gasPost({action:'saveUser',user:eUid?{id:eUid,...usrObj}:usrObj});
     if(!eUid){const newId=res?.id||DB.nid.u++;DB.users.push({id:newId,...usrObj});}
