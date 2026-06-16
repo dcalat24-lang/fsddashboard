@@ -197,16 +197,36 @@ function reRenderCurrent(){
 async function autoRefresh(){
   if(GAS_URL){
     try{
-      const res=await fetch(`${GAS_URL}?action=getDocuments`);
-      const json=await res.json();
+      const [dRes,uRes,sRes]=await Promise.all([
+        fetch(`${GAS_URL}?action=getDocuments`),
+        fetch(`${GAS_URL}?action=getUsers`),
+        fetch(`${GAS_URL}?action=getSheets`),
+      ]);
+      const json=await dRes.json();
+      const uJ=await uRes.json();
+      const sJ=await sRes.json();
       if(json.docs){
         DB.docs=json.docs.map(d=>({id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,statusNotes:Array.isArray(d.statusNotes)?d.statusNotes:[],owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:toCE(d.fiscal)||String(new Date().getFullYear())}));
+      }
+      if(Array.isArray(uJ.users)&&uJ.users.length){
+        DB.users=uJ.users;DB.nid.u=Math.max(...uJ.users.map(x=>x.id))+1;saveUsers();
+        if(CU){const me=DB.users.find(x=>x.u===CU.u);if(me){Object.assign(CU,me);applyUserAvatar(CU);document.getElementById('sbName').textContent=CU.name;}}
+      }
+      if(Array.isArray(sJ.sheets)){
+        const old=JSON.stringify(sheetPages.map(s=>s.id));
+        sheetPages=sJ.sheets.map(s=>({...s,embedUrl:s.embedUrl||toEmbedUrl(s.rawUrl||''),lastFetch:null}));
+        if(sheetPages.length)shNid=Math.max(...sheetPages.map(x=>x.id))+1;
+        saveSheets();
+        if(JSON.stringify(sheetPages.map(s=>s.id))!==old)buildNav();
       }
     }catch(e){}
   }
   reRenderCurrent();
 }
+let liveSyncTimer=null;
+function startLiveSync(){if(liveSyncTimer)clearInterval(liveSyncTimer);liveSyncTimer=setInterval(()=>{if(document.visibilityState==='visible'&&CU)autoRefresh();},15000);}
 function initials(n){const a=(n||'').split(' ');return((a[0]?.[0]||'')+(a[1]?.[0]||'')).toUpperCase()||'?';}
+
 
 // ════════════════════════════════════════════════
 //  NAV
