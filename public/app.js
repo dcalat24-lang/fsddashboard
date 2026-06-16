@@ -93,15 +93,28 @@ function loadCustom(){const x=lsGet(LS.custom);if(x&&Array.isArray(x.customPages
 // ════════════════════════════════════════════════
 //  AUTH
 // ════════════════════════════════════════════════
-function doLogin(){
+async function doLogin(){
   const u=document.getElementById('lu').value.trim();
   const p=document.getElementById('lp').value.trim();
+  // Always pull latest users from backend so a user created/edited on another device works immediately
+  if(GAS_URL){
+    try{
+      const ur=await fetch(`${GAS_URL}?action=getUsers`);
+      const uj=await ur.json();
+      if(Array.isArray(uj.users)&&uj.users.length){
+        DB.users=uj.users;
+        DB.nid.u=Math.max(...uj.users.map(x=>x.id))+1;
+        saveUsers();
+      }
+    }catch(_){}
+  }
   const usr=DB.users.find(x=>x.u===u&&x.p===p);
   if(!usr){Swal.fire({icon:'error',title:'Login Failed',text:'Invalid username or password',confirmButtonColor:'var(--p)'});return;}
   CU=usr;
   lsSet(LS.session,{u:usr.u});
   if(GAS_URL) loadFromSheet(); else showApp();
 }
+
 document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
 function doLogout(){
