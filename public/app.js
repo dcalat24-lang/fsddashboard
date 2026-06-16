@@ -911,19 +911,30 @@ function refMyDocs(){
 }
 function dlDoc(id){const d=DB.docs.find(x=>x.id===id);if(!d||!d.files.length){Swal.fire({icon:'info',title:'No files attached'});return;}d.files.forEach(f=>{if(f.url&&f.url!=='#')window.open(f.url,'_blank');});}
 function renderProfile(el){
+  const me=DB.users.find(u=>u.id===CU.id)||CU;
+  _profilePhoto=me.photo||'';
   el.innerHTML=`<div class="card" style="max-width:460px"><div class="ch"><h3><i class="fas fa-user-edit" style="color:var(--cy)"></i> Edit Profile</h3></div><div class="cb">
+    <div class="fr"><div class="ff"><label>Profile Photo</label>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><img id="ppPrev" src="${me.photo||''}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:1px solid var(--g200);background:var(--g50);${me.photo?'':'display:none'}"><div style="display:flex;flex-direction:column;gap:6px"><input type="file" id="pph" accept="image/*" onchange="onProfilePhoto(event)"><button type="button" class="btn btn-ol btn-sm" onclick="_profilePhoto='';document.getElementById('ppPrev').style.display='none';document.getElementById('pph').value='';"><i class="fas fa-times"></i> Remove Photo</button></div></div>
+    </div></div>
     <div class="fr"><div class="ff"><label>Username</label><input id="pu" value="${CU.u}"></div></div>
     <div class="fr"><div class="ff"><label>New Password <span style="font-weight:400;color:var(--g400)">(leave blank to keep)</span></label><input type="password" id="pp" placeholder="New password"></div></div>
     <div class="fr"><div class="ff"><label>Full Name</label><input id="pn" value="${CU.name}"></div></div>
-    <div class="fr"><div class="ff"><label>Group</label><input id="pdpt" value="${DB.users.find(u=>u.id===CU.id)?.dept||''}"></div></div>
+    <div class="fr"><div class="ff"><label>Group</label><input id="pdpt" value="${me.dept||''}"></div></div>
     <button class="btn btn-p" onclick="saveProfile()"><i class="fas fa-save"></i> Save Changes</button>
   </div></div>`;
 }
-function saveProfile(){
+let _profilePhoto='';
+function onProfilePhoto(e){const f=e.target.files&&e.target.files[0];if(!f)return;resizeImageToDataUrl(f,256).then(d=>{_profilePhoto=d;const im=document.getElementById('ppPrev');im.src=d;im.style.display='';});}
+async function saveProfile(){
   const u=v('pu'),p=v('pp'),n=v('pn'),dpt=v('pdpt');
   if(!u||!n){Swal.fire({icon:'warning',title:'Username and name required'});return;}
-  const usr=DB.users.find(x=>x.id===CU.id);if(usr){usr.u=u;usr.name=n;usr.dept=dpt;if(p)usr.p=p;}
-  CU.u=u;CU.name=n;const ini=initials(n);['sbAva','tAva'].forEach(id=>document.getElementById(id).textContent=ini);document.getElementById('sbName').textContent=n;
+  const usr=DB.users.find(x=>x.id===CU.id);if(usr){usr.u=u;usr.name=n;usr.dept=dpt;usr.photo=_profilePhoto;if(p)usr.p=p;}
+  CU.u=u;CU.name=n;CU.photo=_profilePhoto;if(p)CU.p=p;
+  if(GAS_URL){try{await gasPost({action:'saveUser',user:{id:CU.id,u,p:p||CU.p,name:n,dept:dpt,role:CU.role,email:CU.email||'',photo:_profilePhoto}});}catch(_){}}
+  saveUsers();
+  applyUserAvatar(CU);
+  document.getElementById('sbName').textContent=n;
   Swal.fire({icon:'success',title:'Profile updated',toast:true,position:'top-end',showConfirmButton:false,timer:1800});
 }
 
