@@ -1224,14 +1224,36 @@ function rmSheet(id){Swal.fire({title:'Remove Sheet?',icon:'warning',showCancelB
 // ════════════════════════════════════════════════
 //  FILE DRAG & DROP
 // ════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
   // restore persisted state
   loadUsers();loadSheets();loadCustom();
+  // Sync users + sheets from backend BEFORE login, so any device can sign in
+  // with the latest accounts without first logging in as admin.
+  if(GAS_URL){
+    try{
+      const [uRes,sRes]=await Promise.all([fetch(`${GAS_URL}?action=getUsers`),fetch(`${GAS_URL}?action=getSheets`)]);
+      const uJ=await uRes.json();const sJ=await sRes.json();
+      if(Array.isArray(uJ.users)){
+        if(uJ.users.length===0 && DB.users.length){
+          // First boot ever: seed backend with local default users
+          for(const u of DB.users){
+            try{const r=await gasPost({action:'saveUser',user:{u:u.u,p:u.p,name:u.name,dept:u.dept,role:u.role,email:u.email||''}});if(r?.id)u.id=Number(r.id);}catch(_){}
+          }
+        } else {
+          DB.users=uJ.users;
+        }
+        DB.nid.u=(DB.users.length?Math.max(...DB.users.map(x=>x.id)):0)+1;
+        saveUsers();
+      }
+      if(Array.isArray(sJ.sheets)){sheetPages=sJ.sheets.map(s=>({...s,embedUrl:s.embedUrl||toEmbedUrl(s.rawUrl||''),lastFetch:null}));if(sheetPages.length)shNid=Math.max(...sheetPages.map(x=>x.id))+1;saveSheets();}
+    }catch(e){console.warn('initial user/sheet sync failed',e);}
+  }
   const sess=lsGet(LS.session);
   if(sess&&sess.u){
     const usr=DB.users.find(x=>x.u===sess.u);
     if(usr){CU=usr;if(GAS_URL)loadFromSheet();else showApp();}
   }
+
   const dz=document.getElementById('dz'),dzIn=document.getElementById('dzIn');
   if(dz&&dzIn){
     dz.addEventListener('click',()=>dzIn.click());
