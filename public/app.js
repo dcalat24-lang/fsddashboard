@@ -51,7 +51,6 @@ let staffMenuItems = [
   {id:'dash',    label:'Dashboard',         icon:'fa-tachometer-alt', visible:true},
   {id:'docs',    label:'All Documents',     icon:'fa-file-alt',       visible:true},
   {id:'track',   label:'Document Tracking', icon:'fa-route',          visible:true},
-  {id:'profile', label:'Edit Profile',      icon:'fa-user-edit',      visible:true},
 ];
 let customPages=[], cpNid=1;
 let currentPageKey=null, currentPageType=null; // for restore + auto refresh
