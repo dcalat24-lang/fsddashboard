@@ -663,6 +663,25 @@ function noteHistoryRow(d,colspan){
     ${rows}
   </td></tr>`;
 }
+function trackNoteHistory(d){
+  const list=Array.isArray(d.statusNotes)?d.statusNotes:[];
+  if(!list.length) return '';
+  const rows=[...list].reverse().map(n=>{
+    const sm=SM[n.status]||SM.head;
+    const when=n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-left:3px solid ${sm.color};background:#fff;border-radius:6px;margin-bottom:6px">
+      <span class="badge ${sm.cls}" style="flex-shrink:0"><i class="fas ${sm.icon}"></i> ${sm.label}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12.5px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${n.note||'<em style="color:var(--g400)">(no note)</em>'}</div>
+        <div style="font-size:10.5px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${when}${n.by?' · '+n.by:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div style="margin-top:10px;background:var(--g50);padding:10px;border-radius:var(--r)">
+    <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-history"></i> Note History (${list.length})</div>
+    ${rows}
+  </div>`;
+}
 function noteToggleBtn(d){
   const n=(Array.isArray(d.statusNotes)?d.statusNotes.length:0);
   if(!n) return '';
