@@ -3,8 +3,14 @@
    ════════════════════════════════════════════════ */
 
 // ─── CONFIG ──────────────────────────────────────
-// 👉 Replace with your Google Apps Script Web App URL after deployment
-const GAS_URL = '/api/public/gas';
+// Use same-origin /api/public/gas on Lovable preview & published. When deployed
+// to a different host (e.g. Netlify), point at the published Lovable backend
+// so Google Drive uploads + Supabase persistence keep working.
+const LOVABLE_BACKEND = 'https://fsddashboard.lovable.app/api/public/gas';
+const _h = location.hostname;
+const GAS_URL = (_h.endsWith('lovable.app') || _h === 'localhost' || _h === '127.0.0.1')
+  ? '/api/public/gas'
+  : LOVABLE_BACKEND;
 const FOLDER_ID  = '17QN_wUJlISQNbT3a8Wr-9bcS-aGi04Er';
 const SHEET_ID   = '1RfYWZ-u0pBtHe9IFiNso4ogK1uwpZjvx6_rit6ANjbo';
 const SHEET_NAME = 'sheet1';
