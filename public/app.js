@@ -616,7 +616,7 @@ async function addStepNote(docId,stepKey){
   if(GAS_URL)await gasPost({action:'saveDocument',doc:d});
   Swal.fire({icon:'success',title:'Note saved',toast:true,position:'top-end',showConfirmButton:false,timer:1300});
   if(document.getElementById('moDet')?.classList.contains('open'))openDet(docId);
-  autoRefresh();
+  autoRefresh(true);
 }
 
 // ════════════════════════════════════════════════
@@ -638,7 +638,7 @@ function saveStatus(){
     if(GAS_URL) await gasPost({action:'saveDocument',doc:d});
     hideSpin();closeMo('moSt');
     Swal.fire({icon:'success',title:'Status Updated',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
-    autoRefresh();
+    autoRefresh(true);
   },300);
 }
 function toggleNotes(id){
@@ -796,9 +796,9 @@ async function saveUser(){
   saveUsers();
   closeMo('moUser');
   Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
-  autoRefresh();
+  autoRefresh(true);
 }
-function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(async r=>{if(r.isConfirmed){if(GAS_URL)await gasPost({action:'deleteUser',id});DB.users=DB.users.filter(x=>x.id!==id);saveUsers();try{if(GAS_URL){const ur=await fetch(`${GAS_URL}?action=getUsers`);const uj=await ur.json();if(Array.isArray(uj.users)){DB.users=uj.users;DB.nid.u=(DB.users.length?Math.max(...DB.users.map(x=>x.id)):0)+1;saveUsers();}}}catch(_){}autoRefresh();}});}
+function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(async r=>{if(r.isConfirmed){if(GAS_URL)await gasPost({action:'deleteUser',id});DB.users=DB.users.filter(x=>x.id!==id);saveUsers();try{if(GAS_URL){const ur=await fetch(`${GAS_URL}?action=getUsers`);const uj=await ur.json();if(Array.isArray(uj.users)){DB.users=uj.users;DB.nid.u=(DB.users.length?Math.max(...DB.users.map(x=>x.id)):0)+1;saveUsers();}}}catch(_){}autoRefresh(true);}});}
 
 // ════════════════════════════════════════════════
 //  ADD / EDIT DOCUMENT + UPLOAD TO DRIVE
@@ -856,7 +856,7 @@ async function saveDoc(){
 
   hideSpin();setUplProg(0);
   Swal.fire({icon:'success',title:GAS_URL?'Saved to Google Sheets & Drive!':'Document saved (Demo Mode)',toast:true,position:'top-end',showConfirmButton:false,timer:1800});
-  autoRefresh();
+  autoRefresh(true);
 }
 
 async function uploadToDrive(file){
@@ -877,7 +877,7 @@ async function uploadToDrive(file){
 function delDoc(id){
   const d=DB.docs.find(x=>x.id===id);if(!d)return;
   Swal.fire({title:'Delete document?',text:d.subject,icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'})
-  .then(async r=>{if(r.isConfirmed){DB.docs=DB.docs.filter(x=>x.id!==id);if(GAS_URL)await gasPost({action:'deleteDocument',id});autoRefresh();}});
+  .then(async r=>{if(r.isConfirmed){DB.docs=DB.docs.filter(x=>x.id!==id);if(GAS_URL)await gasPost({action:'deleteDocument',id});autoRefresh(true);}});
 }
 
 // ════════════════════════════════════════════════
