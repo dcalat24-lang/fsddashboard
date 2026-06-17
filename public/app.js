@@ -3,8 +3,14 @@
    ════════════════════════════════════════════════ */
 
 // ─── CONFIG ──────────────────────────────────────
-// 👉 Replace with your Google Apps Script Web App URL after deployment
-const GAS_URL = '/api/public/gas';
+// Use same-origin /api/public/gas on Lovable preview & published. When deployed
+// to a different host (e.g. Netlify), point at the published Lovable backend
+// so Google Drive uploads + Supabase persistence keep working.
+const LOVABLE_BACKEND = 'https://fsddashboard.lovable.app/api/public/gas';
+const _h = location.hostname;
+const GAS_URL = (_h.endsWith('lovable.app') || _h === 'localhost' || _h === '127.0.0.1')
+  ? '/api/public/gas'
+  : LOVABLE_BACKEND;
 const FOLDER_ID  = '17QN_wUJlISQNbT3a8Wr-9bcS-aGi04Er';
 const SHEET_ID   = '1RfYWZ-u0pBtHe9IFiNso4ogK1uwpZjvx6_rit6ANjbo';
 const SHEET_NAME = 'sheet1';
@@ -45,7 +51,6 @@ let staffMenuItems = [
   {id:'dash',    label:'Dashboard',         icon:'fa-tachometer-alt', visible:true},
   {id:'docs',    label:'All Documents',     icon:'fa-file-alt',       visible:true},
   {id:'track',   label:'Document Tracking', icon:'fa-route',          visible:true},
-  {id:'profile', label:'Edit Profile',      icon:'fa-user-edit',      visible:true},
 ];
 let customPages=[], cpNid=1;
 let currentPageKey=null, currentPageType=null; // for restore + auto refresh
@@ -194,37 +199,53 @@ function reRenderCurrent(){
   if(currentPageType==='custom'){const cp=customPages.find(x=>String(x.id)===String(currentPageKey));if(cp){goCustomPage(cp.id);return;}}
   goPage(currentPageKey);
 }
-async function autoRefresh(){
-  if(GAS_URL){
-    try{
-      const [dRes,uRes,sRes]=await Promise.all([
-        fetch(`${GAS_URL}?action=getDocuments`),
-        fetch(`${GAS_URL}?action=getUsers`),
-        fetch(`${GAS_URL}?action=getSheets`),
-      ]);
-      const json=await dRes.json();
-      const uJ=await uRes.json();
-      const sJ=await sRes.json();
-      if(json.docs){
-        DB.docs=json.docs.map(d=>({id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,statusNotes:Array.isArray(d.statusNotes)?d.statusNotes:[],owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:toCE(d.fiscal)||String(new Date().getFullYear())}));
-      }
-      if(Array.isArray(uJ.users)&&uJ.users.length){
-        DB.users=uJ.users;DB.nid.u=Math.max(...uJ.users.map(x=>x.id))+1;saveUsers();
-        if(CU){const me=DB.users.find(x=>x.u===CU.u);if(me){Object.assign(CU,me);applyUserAvatar(CU);document.getElementById('sbName').textContent=CU.name;}}
-      }
-      if(Array.isArray(sJ.sheets)){
-        const old=JSON.stringify(sheetPages.map(s=>s.id));
-        sheetPages=sJ.sheets.map(s=>({...s,embedUrl:s.embedUrl||toEmbedUrl(s.rawUrl||''),lastFetch:null}));
-        if(sheetPages.length)shNid=Math.max(...sheetPages.map(x=>x.id))+1;
-        saveSheets();
-        if(JSON.stringify(sheetPages.map(s=>s.id))!==old)buildNav();
-      }
-    }catch(e){}
-  }
-  reRenderCurrent();
+let _lastDataHash='';
+function _hashState(){
+  try{return JSON.stringify({
+    d:DB.docs.map(d=>[d.id,d.status,d.statusNote,(d.statusNotes||[]).length,(d.files||[]).length,d.subject,d.fsdDate]),
+    u:DB.users.map(u=>[u.id,u.u,u.name,u.role,u.dept,u.photo?1:0]),
+    s:sheetPages.map(s=>[s.id,s.name,s.embedUrl]),
+  });}catch(e){return Math.random()+'';}
+}
+async function autoRefresh(force){
+  if(!GAS_URL){if(force)reRenderCurrent();return;}
+  try{
+    const [dRes,uRes,sRes]=await Promise.all([
+      fetch(`${GAS_URL}?action=getDocuments`),
+      fetch(`${GAS_URL}?action=getUsers`),
+      fetch(`${GAS_URL}?action=getSheets`),
+    ]);
+    const json=await dRes.json();
+    const uJ=await uRes.json();
+    const sJ=await sRes.json();
+    if(json.docs){
+      DB.docs=json.docs.map(d=>({id:Number(d.id),dcalNo:d.dcalNo,dcalDate:d.dcalDate,fsdNo:d.fsdNo,fsdDate:d.fsdDate,docNo:d.docNo,docDate:d.docDate,subject:d.subject,status:d.status,statusNote:d.statusNote,statusNotes:Array.isArray(d.statusNotes)?d.statusNotes:[],owner:d.owner,files:d.files||[],uid:Number(d.uid)||1,fiscal:toCE(d.fiscal)||String(new Date().getFullYear())}));
+    }
+    let navChanged=false;
+    if(Array.isArray(uJ.users)&&uJ.users.length){
+      DB.users=uJ.users;DB.nid.u=Math.max(...uJ.users.map(x=>x.id))+1;saveUsers();
+      if(CU){const me=DB.users.find(x=>x.u===CU.u);if(me){Object.assign(CU,me);applyUserAvatar(CU);const nm=document.getElementById('sbName');if(nm)nm.textContent=CU.name;}}
+    }
+    if(Array.isArray(sJ.sheets)){
+      const old=JSON.stringify(sheetPages.map(s=>s.id));
+      sheetPages=sJ.sheets.map(s=>({...s,embedUrl:s.embedUrl||toEmbedUrl(s.rawUrl||''),lastFetch:null}));
+      if(sheetPages.length)shNid=Math.max(...sheetPages.map(x=>x.id))+1;
+      saveSheets();
+      if(JSON.stringify(sheetPages.map(s=>s.id))!==old){buildNav();navChanged=true;}
+    }
+  }catch(e){}
+  const h=_hashState();
+  if(force || h!==_lastDataHash){_lastDataHash=h;reRenderCurrent();}
 }
 let liveSyncTimer=null;
-function startLiveSync(){if(liveSyncTimer)clearInterval(liveSyncTimer);liveSyncTimer=setInterval(()=>{if(document.visibilityState==='visible'&&CU)autoRefresh();},15000);}
+function startLiveSync(){
+  _lastDataHash=_hashState();
+  if(liveSyncTimer)clearInterval(liveSyncTimer);
+  liveSyncTimer=setInterval(()=>{
+    // silent poll — only re-renders if backend data actually changed
+    if(document.visibilityState==='visible'&&CU)autoRefresh(false);
+  },15000);
+}
 function initials(n){const a=(n||'').split(' ');return((a[0]?.[0]||'')+(a[1]?.[0]||'')).toUpperCase()||'?';}
 
 
@@ -384,13 +405,12 @@ function renderDash(el){
       <td>${sbadge(d.status)}</td>
       <td><div style="display:flex;gap:3px;flex-wrap:wrap">${d.files.map(f=>`<span onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')" style="cursor:pointer" title="${f.name}">${ficon(f.type)}</span>`).join('')}</div></td>
       <td><div style="display:flex;gap:3px;flex-wrap:wrap">
-        ${noteToggleBtn(d)}
         <button class="btn btn-ol btn-sm btn-ico" onclick="openDet(${d.id})"><i class="fas fa-eye"></i></button>
         <button class="btn btn-c btn-sm btn-ico"  onclick="openStMo(${d.id})"><i class="fas fa-exchange-alt"></i></button>
         <button class="btn btn-ol btn-sm btn-ico" onclick="openEditDoc(${d.id})"><i class="fas fa-edit"></i></button>
         <button class="btn btn-d btn-sm btn-ico"  onclick="delDoc(${d.id})"><i class="fas fa-trash"></i></button>
       </div></td>
-    </tr>${noteHistoryRow(d,10)}`).join('')||`<tr><td colspan="10"><div class="empty"><i class="fas fa-inbox"></i><p>No documents</p></div></td></tr>`}</tbody>
+    </tr>`).join('')||`<tr><td colspan="10"><div class="empty"><i class="fas fa-inbox"></i><p>No documents</p></div></td></tr>`}</tbody>
   </table></div></div></div>`;
 
   const stClr={head:'#2E7D32',pel:'#1565C0',ops:'#F57C00',air:'#7B1FA2',dg:'#311B92',done:'#00695C'};
@@ -594,7 +614,7 @@ async function addStepNote(docId,stepKey){
   if(GAS_URL)await gasPost({action:'saveDocument',doc:d});
   Swal.fire({icon:'success',title:'Note saved',toast:true,position:'top-end',showConfirmButton:false,timer:1300});
   if(document.getElementById('moDet')?.classList.contains('open'))openDet(docId);
-  autoRefresh();
+  autoRefresh(true);
 }
 
 // ════════════════════════════════════════════════
@@ -616,7 +636,7 @@ function saveStatus(){
     if(GAS_URL) await gasPost({action:'saveDocument',doc:d});
     hideSpin();closeMo('moSt');
     Swal.fire({icon:'success',title:'Status Updated',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
-    autoRefresh();
+    autoRefresh(true);
   },300);
 }
 function toggleNotes(id){
@@ -641,6 +661,25 @@ function noteHistoryRow(d,colspan){
     <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-history"></i> Note History (${list.length})</div>
     ${rows}
   </td></tr>`;
+}
+function trackNoteHistory(d){
+  const list=Array.isArray(d.statusNotes)?d.statusNotes:[];
+  if(!list.length) return '';
+  const rows=[...list].reverse().map(n=>{
+    const sm=SM[n.status]||SM.head;
+    const when=n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-left:3px solid ${sm.color};background:#fff;border-radius:6px;margin-bottom:6px">
+      <span class="badge ${sm.cls}" style="flex-shrink:0"><i class="fas ${sm.icon}"></i> ${sm.label}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12.5px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${n.note||'<em style="color:var(--g400)">(no note)</em>'}</div>
+        <div style="font-size:10.5px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${when}${n.by?' · '+n.by:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div style="margin-top:10px;background:var(--g50);padding:10px;border-radius:var(--r)">
+    <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-history"></i> Note History (${list.length})</div>
+    ${rows}
+  </div>`;
 }
 function noteToggleBtn(d){
   const n=(Array.isArray(d.statusNotes)?d.statusNotes.length:0);
@@ -722,6 +761,7 @@ function buildTkCards(all,tab){
       <div class="tc-b">
         <div class="pipe" style="background:var(--g50);padding:10px;border-radius:var(--r)">${buildTL(d.status,d)}</div>
         ${d.statusNote?`<div style="background:#FFFDE7;border:1px solid #FBC02D;border-radius:var(--r);padding:9px 13px;font-size:12.5px;margin-top:8px"><i class="fas fa-sticky-note" style="color:var(--yw);margin-right:6px"></i>${d.statusNote}</div>`:''}
+        ${trackNoteHistory(d)}
         <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
           <button class="btn btn-ol btn-sm" onclick="openDet(${d.id})"><i class="fas fa-eye"></i> Detail</button>
           <button class="btn btn-c btn-sm"  onclick="openStMo(${d.id})"><i class="fas fa-exchange-alt"></i> Update</button>
@@ -774,9 +814,9 @@ async function saveUser(){
   saveUsers();
   closeMo('moUser');
   Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
-  autoRefresh();
+  autoRefresh(true);
 }
-function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(async r=>{if(r.isConfirmed){if(GAS_URL)await gasPost({action:'deleteUser',id});DB.users=DB.users.filter(x=>x.id!==id);saveUsers();try{if(GAS_URL){const ur=await fetch(`${GAS_URL}?action=getUsers`);const uj=await ur.json();if(Array.isArray(uj.users)){DB.users=uj.users;DB.nid.u=(DB.users.length?Math.max(...DB.users.map(x=>x.id)):0)+1;saveUsers();}}}catch(_){}autoRefresh();}});}
+function delUser(id){Swal.fire({title:'Delete user?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'}).then(async r=>{if(r.isConfirmed){if(GAS_URL)await gasPost({action:'deleteUser',id});DB.users=DB.users.filter(x=>x.id!==id);saveUsers();try{if(GAS_URL){const ur=await fetch(`${GAS_URL}?action=getUsers`);const uj=await ur.json();if(Array.isArray(uj.users)){DB.users=uj.users;DB.nid.u=(DB.users.length?Math.max(...DB.users.map(x=>x.id)):0)+1;saveUsers();}}}catch(_){}autoRefresh(true);}});}
 
 // ════════════════════════════════════════════════
 //  ADD / EDIT DOCUMENT + UPLOAD TO DRIVE
@@ -834,7 +874,7 @@ async function saveDoc(){
 
   hideSpin();setUplProg(0);
   Swal.fire({icon:'success',title:GAS_URL?'Saved to Google Sheets & Drive!':'Document saved (Demo Mode)',toast:true,position:'top-end',showConfirmButton:false,timer:1800});
-  autoRefresh();
+  autoRefresh(true);
 }
 
 async function uploadToDrive(file){
@@ -855,7 +895,7 @@ async function uploadToDrive(file){
 function delDoc(id){
   const d=DB.docs.find(x=>x.id===id);if(!d)return;
   Swal.fire({title:'Delete document?',text:d.subject,icon:'warning',showCancelButton:true,confirmButtonText:'Delete',cancelButtonText:'Cancel',confirmButtonColor:'var(--rd)'})
-  .then(async r=>{if(r.isConfirmed){DB.docs=DB.docs.filter(x=>x.id!==id);if(GAS_URL)await gasPost({action:'deleteDocument',id});autoRefresh();}});
+  .then(async r=>{if(r.isConfirmed){DB.docs=DB.docs.filter(x=>x.id!==id);if(GAS_URL)await gasPost({action:'deleteDocument',id});autoRefresh(true);}});
 }
 
 // ════════════════════════════════════════════════
@@ -1248,12 +1288,13 @@ function toEmbedUrl(url){
 }
 let shTimers={};
 function renderSheetPage(s,el){
-  // realtime: reload iframe every 30s
+  // Google Sheets embed already streams changes from Google — no need to
+  // forcibly reload the iframe (that causes a visible flicker).
   if(shTimers[s.id])clearInterval(shTimers[s.id]);
   el.innerHTML=`<div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 110px)"><div class="ch">
     <h3><i class="fas fa-table" style="color:var(--gn)"></i> ${s.name}</h3>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span style="font-size:11px;color:var(--g400)">Live · auto-refresh 30s · Updated <strong id="sht-${s.id}">${new Date(s.lastFetch||Date.now()).toLocaleTimeString()}</strong></span>
+      <span style="font-size:11px;color:var(--g400)">Live · Updated <strong id="sht-${s.id}">${new Date(s.lastFetch||Date.now()).toLocaleTimeString()}</strong></span>
       <button class="btn btn-g btn-sm" onclick="refreshSh(${s.id})"><i class="fas fa-sync"></i> Refresh</button>
       <a class="btn btn-ol btn-sm" href="${s.rawUrl}" target="_blank"><i class="fas fa-external-link-alt"></i> Open</a>
       ${CU&&CU.role==='admin'?`<button class="btn btn-d btn-sm" onclick="rmSheet(${s.id})"><i class="fas fa-trash"></i> Remove</button>`:''}
@@ -1262,13 +1303,6 @@ function renderSheetPage(s,el){
   <div class="cb" style="flex:1;padding:0;overflow:hidden">
     <iframe id="shf-${s.id}" src="${s.embedUrl}" style="width:100%;height:100%;border:none;display:block" allow="clipboard-write"></iframe>
   </div></div>`;
-  shTimers[s.id]=setInterval(()=>{
-    const f=document.getElementById('shf-'+s.id);
-    if(!f){clearInterval(shTimers[s.id]);delete shTimers[s.id];return;}
-    const u=new URL(s.embedUrl);u.searchParams.set('_t',Date.now());f.src=u.toString();
-    s.lastFetch=Date.now();
-    const t=document.getElementById('sht-'+s.id);if(t)t.textContent=new Date().toLocaleTimeString();
-  },30000);
 }
 function refreshSh(id){
   const s=sheetPages.find(x=>x.id===id);if(!s)return;
