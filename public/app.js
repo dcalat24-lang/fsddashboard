@@ -1425,3 +1425,219 @@ const mobOv=document.createElement('div');
 mobOv.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99;display:none';
 mobOv.addEventListener('click',closeMobSb);
 document.body.appendChild(mobOv);
+
+// ════════════════════════════════════════════════
+//  AOC TRACKING
+// ════════════════════════════════════════════════
+let aocList=[], eAocId=null, _aocDocTarget=null;
+const AOC_PHASES=[
+  {key:'pre',   label:'Pre-Application Phase',        icon:'fa-clipboard-list', color:'#1565C0'},
+  {key:'form',  label:'Formal Application Phase',     icon:'fa-file-signature', color:'#6A1B9A'},
+  {key:'eval',  label:'Document Evaluation Phase',    icon:'fa-file-alt',       color:'#EF6C00'},
+  {key:'demo',  label:'Demonstration & Evaluation',   icon:'fa-clipboard-check',color:'#00838F'},
+  {key:'cert',  label:'Certification Phase',          icon:'fa-award',          color:'#2E7D32'},
+];
+async function loadAoc(){
+  if(!GAS_URL)return;
+  try{const r=await fetch(`${GAS_URL}?action=getAoc`);const j=await r.json();if(Array.isArray(j.aoc))aocList=j.aoc;}catch(e){console.warn('aoc load',e);}
+}
+function renderAoc(el){
+  el.innerHTML=`<div class="card"><div class="ch">
+    <h3><i class="fas fa-plane-departure" style="color:var(--p)"></i> AOC Tracking</h3>
+    <button class="btn btn-p btn-sm" onclick="openAddAoc()"><i class="fas fa-plus"></i> Add Company</button>
+  </div><div class="cb" id="aocBody"></div></div>`;
+  loadAoc().then(()=>refAoc());
+}
+function refAoc(){
+  const body=document.getElementById('aocBody');if(!body)return;
+  if(!aocList.length){body.innerHTML=`<div class="empty"><i class="fas fa-plane-departure"></i><p>No companies yet — click "Add Company" to start.</p></div>`;return;}
+  body.innerHTML=aocList.map(a=>{
+    const done=AOC_PHASES.filter(p=>a.phases?.[p.key]?.done).length;
+    const pct=Math.round(done/AOC_PHASES.length*100);
+    return `<div class="tc" style="margin-bottom:12px">
+      <div class="tc-h" onclick="tkTog(this)">
+        <div style="min-width:0;flex:1">
+          <div class="tc-dn">${escHtml(a.name)}</div>
+          <div class="tc-ds">${escHtml(a.operator||'')} ${a.contact?'· '+escHtml(a.contact):''}</div>
+          <div style="background:var(--g100);border-radius:10px;height:6px;margin-top:6px;overflow:hidden;max-width:280px"><div style="background:var(--gn);height:100%;width:${pct}%"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span class="badge bp">${done}/${AOC_PHASES.length} phases</span>
+          <i class="fas fa-chevron-down" style="color:var(--g400);font-size:11px;transition:.2s"></i>
+        </div>
+      </div>
+      <div class="tc-b">
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap">
+          <button class="btn btn-ol btn-sm" onclick="openEditAoc(${a.id})"><i class="fas fa-edit"></i> Edit Info</button>
+          <button class="btn btn-c btn-sm" onclick="openAocDocSearch(${a.id})"><i class="fas fa-search"></i> Attach Document</button>
+          <button class="btn btn-d btn-sm" onclick="delAoc(${a.id})"><i class="fas fa-trash"></i> Delete</button>
+        </div>
+        ${AOC_PHASES.map(p=>{
+          const ph=a.phases?.[p.key]||{};
+          const files=Array.isArray(ph.files)?ph.files:[];
+          return `<div style="border:1px solid var(--g200);border-left:4px solid ${p.color};border-radius:var(--r);padding:12px;margin-bottom:10px;background:#fff">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <i class="fas ${p.icon}" style="color:${p.color};font-size:18px"></i>
+              <strong style="flex:1;font-size:13px">${p.label}</strong>
+              <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--g600);cursor:pointer">
+                <input type="checkbox" ${ph.done?'checked':''} onchange="aocToggleDone(${a.id},'${p.key}',this.checked)"> Completed
+              </label>
+              <label class="btn btn-ol btn-sm" style="cursor:pointer;margin:0"><i class="fas fa-paperclip"></i> Attach
+                <input type="file" accept=".pdf,image/jpeg,image/jpg" multiple style="display:none" onchange="aocUploadFiles(${a.id},'${p.key}',this.files,this)">
+              </label>
+            </div>
+            <textarea placeholder="Notes for this phase..." onchange="aocSetPhaseNote(${a.id},'${p.key}',this.value)" style="width:100%;margin-top:8px;min-height:52px;font-size:12.5px">${escHtml(ph.note||'')}</textarea>
+            ${files.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${files.map((f,i)=>`
+              <div class="fi2" style="cursor:pointer" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','${f.type||''}')">
+                ${ficon(f.type)}<span class="fn" style="max-width:150px">${escHtml(f.name)}</span>
+                <button onclick="event.stopPropagation();aocRemoveFile(${a.id},'${p.key}',${i})" style="background:none;border:none;color:var(--rd);cursor:pointer;font-size:11px"><i class="fas fa-times"></i></button>
+              </div>`).join('')}</div>`:''}
+          </div>`;
+        }).join('')}
+        ${(a.docIds||[]).length?`<div style="margin-top:10px">
+          <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Attached Documents (${a.docIds.length})</div>
+          ${a.docIds.map(did=>{const d=DB.docs.find(x=>x.id===did);if(!d)return`<div style="font-size:12px;color:var(--g400)">Doc #${did} (not found)</div>`;
+            return `<div style="display:flex;gap:8px;align-items:center;padding:6px 10px;background:var(--g50);border-radius:6px;margin-bottom:4px">
+              <code style="font-size:11px">${d.fsdNo}</code>
+              <span style="flex:1;font-size:12.5px" class="tdl" onclick="openDet(${d.id})">${escHtml(d.subject)}</span>
+              ${sbadge(d.status)}
+              <button class="btn btn-d btn-xs" onclick="aocRemoveDoc(${a.id},${d.id})"><i class="fas fa-times"></i></button>
+            </div>`;
+          }).join('')}
+        </div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function openAddAoc(){eAocId=null;document.getElementById('moAocT').textContent='Add Company';['aName','aOperator','aContact','aNote'].forEach(id=>document.getElementById(id).value='');openMo('moAoc');}
+function openEditAoc(id){const a=aocList.find(x=>x.id===id);if(!a)return;eAocId=id;document.getElementById('moAocT').textContent='Edit Company';document.getElementById('aName').value=a.name||'';document.getElementById('aOperator').value=a.operator||'';document.getElementById('aContact').value=a.contact||'';document.getElementById('aNote').value=a.note||'';openMo('moAoc');}
+async function saveAocCompany(){
+  const name=v('aName').trim();if(!name){Swal.fire({icon:'warning',title:'Company name required'});return;}
+  const payload={name,operator:v('aOperator').trim(),contact:v('aContact').trim(),note:v('aNote').trim()};
+  if(eAocId){const a=aocList.find(x=>x.id===eAocId);if(a){Object.assign(a,payload);await gasPost({action:'saveAoc',aoc:{id:eAocId,...a}});}}
+  else {const res=await gasPost({action:'saveAoc',aoc:{...payload,phases:{},files:[],docIds:[]}});const id=res?.id||Date.now();aocList.push({id:Number(id),...payload,phases:{},files:[],docIds:[]});}
+  closeMo('moAoc');refAoc();Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
+}
+async function delAoc(id){const r=await Swal.fire({title:'Delete company?',icon:'warning',showCancelButton:true,confirmButtonColor:'var(--rd)'});if(!r.isConfirmed)return;await gasPost({action:'deleteAoc',id});aocList=aocList.filter(x=>x.id!==id);refAoc();}
+async function aocPersist(a){await gasPost({action:'saveAoc',aoc:a});}
+function aocToggleDone(id,key,val){const a=aocList.find(x=>x.id===id);if(!a)return;if(!a.phases)a.phases={};if(!a.phases[key])a.phases[key]={};a.phases[key].done=val;aocPersist(a);refAoc();}
+function aocSetPhaseNote(id,key,note){const a=aocList.find(x=>x.id===id);if(!a)return;if(!a.phases)a.phases={};if(!a.phases[key])a.phases[key]={};a.phases[key].note=note;aocPersist(a);}
+async function aocUploadFiles(id,key,files,inp){
+  const a=aocList.find(x=>x.id===id);if(!a)return;
+  if(!a.phases)a.phases={};if(!a.phases[key])a.phases[key]={};if(!Array.isArray(a.phases[key].files))a.phases[key].files=[];
+  showSpin('Uploading to Google Drive...');
+  for(const f of files){
+    try{
+      const b64=await fileToB64(f);
+      const r=await gasPost({action:'uploadFile',fileName:f.name,mimeType:f.type||'application/octet-stream',fileData:b64,folder:'aoc'});
+      if(r&&r.id)a.phases[key].files.push({name:f.name,type:gType(f.name),url:r.viewUrl,previewUrl:r.previewUrl});
+      else Swal.fire({icon:'error',title:'Upload failed',text:r?.error||'Unknown error'});
+    }catch(e){console.warn(e);}
+  }
+  hideSpin();inp.value='';aocPersist(a);refAoc();
+}
+function aocRemoveFile(id,key,idx){const a=aocList.find(x=>x.id===id);if(!a||!a.phases?.[key]?.files)return;a.phases[key].files.splice(idx,1);aocPersist(a);refAoc();}
+function aocRemoveDoc(id,did){const a=aocList.find(x=>x.id===id);if(!a)return;a.docIds=(a.docIds||[]).filter(x=>x!==did);aocPersist(a);refAoc();}
+function openAocDocSearch(aocId){_aocDocTarget=aocId;document.getElementById('aocDocSrch').value='';refAocDocSearch();openMo('moAocDoc');}
+function refAocDocSearch(){
+  const q=(v('aocDocSrch')||'').toLowerCase();
+  const tb=document.getElementById('aocDocTb');if(!tb)return;
+  const rows=DB.docs.filter(d=>!q||[d.docNo,d.fsdNo,d.dcalNo,d.subject].some(x=>(x||'').toLowerCase().includes(q))).slice(0,50);
+  tb.innerHTML=rows.map(d=>`<tr>
+    <td><code style="font-size:11px">${d.docNo||'-'}</code></td>
+    <td><code style="font-size:11px">${d.fsdNo}</code></td>
+    <td style="font-size:12.5px">${escHtml(d.subject)}</td>
+    <td><button class="btn btn-p btn-sm" onclick="aocAttachDoc(${d.id})"><i class="fas fa-plus"></i></button></td>
+  </tr>`).join('')||`<tr><td colspan="4"><div class="empty" style="padding:16px"><p>No matches</p></div></td></tr>`;
+}
+function aocAttachDoc(did){
+  const a=aocList.find(x=>x.id===_aocDocTarget);if(!a)return;
+  if(!Array.isArray(a.docIds))a.docIds=[];
+  if(!a.docIds.includes(did))a.docIds.push(did);
+  aocPersist(a);closeMo('moAocDoc');refAoc();
+  Swal.fire({icon:'success',title:'Document attached',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
+}
+function fileToB64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=rej;r.readAsDataURL(f);});}
+
+// ════════════════════════════════════════════════
+//  HR MANAGEMENT
+// ════════════════════════════════════════════════
+let hrList=[], eHrId=null, _hrPhoto='';
+async function loadHr(){if(!GAS_URL)return;try{const r=await fetch(`${GAS_URL}?action=getHr`);const j=await r.json();if(Array.isArray(j.hr))hrList=j.hr;}catch(e){console.warn('hr load',e);}}
+function renderHr(el){
+  el.innerHTML=`<div class="card"><div class="ch">
+    <h3><i class="fas fa-id-badge" style="color:var(--p)"></i> HR Management</h3>
+    <button class="btn btn-p btn-sm" onclick="openAddHr()"><i class="fas fa-user-plus"></i> Add Employee</button>
+  </div><div class="cb" id="hrBody"></div></div>`;
+  loadHr().then(()=>refHr());
+}
+function refHr(){
+  const body=document.getElementById('hrBody');if(!body)return;
+  if(!hrList.length){body.innerHTML=`<div class="empty"><i class="fas fa-users"></i><p>No employees yet.</p></div>`;return;}
+  body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">${hrList.map(h=>{
+    const avatar=h.photo?`<img src="${h.photo}" style="width:64px;height:64px;border-radius:50%;object-fit:cover">`:`<div style="width:64px;height:64px;border-radius:50%;background:var(--g100);color:var(--g600);display:flex;align-items:center;justify-content:center;font-weight:600">${initials(h.name)}</div>`;
+    const courses=Array.isArray(h.courses)?h.courses:[];
+    const passed=courses.filter(c=>c.status==='passed').length;
+    return `<div style="border:1px solid var(--g200);border-radius:var(--r);padding:14px;background:#fff">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        ${avatar}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px">${escHtml(h.name)}</div>
+          <div style="font-size:12px;color:var(--g600)">${escHtml(h.position||'')} ${h.department?'· '+escHtml(h.department):''}</div>
+          <div style="font-size:11.5px;color:var(--g500);margin-top:4px">${h.email?`<i class="fas fa-envelope"></i> ${escHtml(h.email)}`:''} ${h.phone?`<br><i class="fas fa-phone"></i> ${escHtml(h.phone)}`:''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="btn btn-ol btn-sm btn-ico" onclick="openEditHr(${h.id})"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-d btn-sm btn-ico" onclick="delHr(${h.id})"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      ${h.bio?`<div style="font-size:12px;color:var(--g700);margin-top:8px;padding:8px;background:var(--g50);border-radius:6px">${escHtml(h.bio)}</div>`:''}
+      <div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:600;color:var(--g500);text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-graduation-cap"></i> Training (${passed}/${courses.length} passed)</div>
+          <button class="btn btn-g btn-xs" onclick="hrAddCourse(${h.id})"><i class="fas fa-plus"></i> Course</button>
+        </div>
+        ${courses.length?courses.map((c,i)=>{
+          const badge=c.status==='passed'?'bg':c.status==='in_progress'?'bc':'bo';
+          return `<div style="display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--g200);border-radius:6px;margin-bottom:4px">
+            <span style="flex:1;font-size:12.5px">${escHtml(c.name)}</span>
+            <select onchange="hrSetCourseStatus(${h.id},${i},this.value)" style="font-size:11px;padding:2px 4px">
+              <option value="planned" ${c.status==='planned'?'selected':''}>Planned</option>
+              <option value="in_progress" ${c.status==='in_progress'?'selected':''}>In Progress</option>
+              <option value="passed" ${c.status==='passed'?'selected':''}>Passed</option>
+            </select>
+            <span class="badge ${badge}" style="font-size:10px">${c.date||''}</span>
+            <button class="btn btn-d btn-xs" onclick="hrRemoveCourse(${h.id},${i})"><i class="fas fa-times"></i></button>
+          </div>`;
+        }).join(''):`<div style="font-size:11.5px;color:var(--g400);padding:6px">No courses yet.</div>`}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+function clearHrPhoto(){_hrPhoto='';document.getElementById('hPhoto').value='';document.getElementById('hPhotoRow').style.display='none';}
+function setHrPhotoPreview(d){_hrPhoto=d||'';const row=document.getElementById('hPhotoRow');if(!d){row.style.display='none';return;}document.getElementById('hPhotoPrev').src=d;row.style.display='';}
+function onHrPhoto(e){const f=e.target.files&&e.target.files[0];if(!f)return;resizeImageToDataUrl(f,256).then(setHrPhotoPreview);}
+function openAddHr(){eHrId=null;document.getElementById('moHrT').textContent='Add Employee';['hName','hPos','hDept','hEmail','hPhone','hBio'].forEach(id=>document.getElementById(id).value='');clearHrPhoto();openMo('moHr');}
+function openEditHr(id){const h=hrList.find(x=>x.id===id);if(!h)return;eHrId=id;document.getElementById('moHrT').textContent='Edit Employee';document.getElementById('hName').value=h.name||'';document.getElementById('hPos').value=h.position||'';document.getElementById('hDept').value=h.department||'';document.getElementById('hEmail').value=h.email||'';document.getElementById('hPhone').value=h.phone||'';document.getElementById('hBio').value=h.bio||'';if(h.photo)setHrPhotoPreview(h.photo);else clearHrPhoto();openMo('moHr');}
+async function saveHrEmployee(){
+  const name=v('hName').trim();if(!name){Swal.fire({icon:'warning',title:'Name required'});return;}
+  const payload={name,position:v('hPos').trim(),department:v('hDept').trim(),email:v('hEmail').trim(),phone:v('hPhone').trim(),bio:v('hBio').trim(),photo:_hrPhoto||''};
+  if(eHrId){const h=hrList.find(x=>x.id===eHrId);if(h){Object.assign(h,payload);await gasPost({action:'saveHr',hr:{id:eHrId,...h}});}}
+  else {const res=await gasPost({action:'saveHr',hr:{...payload,courses:[]}});const id=res?.id||Date.now();hrList.push({id:Number(id),...payload,courses:[]});}
+  closeMo('moHr');refHr();Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
+}
+async function delHr(id){const r=await Swal.fire({title:'Delete employee?',icon:'warning',showCancelButton:true,confirmButtonColor:'var(--rd)'});if(!r.isConfirmed)return;await gasPost({action:'deleteHr',id});hrList=hrList.filter(x=>x.id!==id);refHr();}
+async function hrPersist(h){await gasPost({action:'saveHr',hr:h});}
+async function hrAddCourse(id){
+  const h=hrList.find(x=>x.id===id);if(!h)return;
+  const r=await Swal.fire({title:'Add Course',html:`<input id="cName" class="swal2-input" placeholder="Course name"><input id="cDate" type="date" class="swal2-input">`,showCancelButton:true,preConfirm:()=>({name:(document.getElementById('cName').value||'').trim(),date:document.getElementById('cDate').value||''})});
+  if(!r.isConfirmed||!r.value.name)return;
+  if(!Array.isArray(h.courses))h.courses=[];
+  h.courses.push({name:r.value.name,date:r.value.date,status:'planned'});
+  await hrPersist(h);refHr();
+}
+async function hrRemoveCourse(id,idx){const h=hrList.find(x=>x.id===id);if(!h||!h.courses)return;h.courses.splice(idx,1);await hrPersist(h);refHr();}
+async function hrSetCourseStatus(id,idx,st){const h=hrList.find(x=>x.id===id);if(!h||!h.courses?.[idx])return;h.courses[idx].status=st;await hrPersist(h);refHr();}
+
+// Trigger Drive folder creation once per session
+(function ensureDriveFolders(){try{if(GAS_URL)fetch(`${GAS_URL}?action=ensureFolders`).catch(()=>{});}catch(_){} })();
