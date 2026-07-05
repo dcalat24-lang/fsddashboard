@@ -1,17 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const FOLDER_NAME = "FSD Documents";
 const GATEWAY = "https://connector-gateway.lovable.dev/google_drive";
+const DEFAULT_FOLDER = "FSD Documents";
+const FOLDER_ALIASES: Record<string, string> = {
+  default: "FSD Documents",
+  aoc: "FSD AOC Tracking",
+  hr: "FSD HR Management",
+};
 
-let cachedFolderId: string | null = null;
-async function getOrCreateFolderId(lovableKey: string, driveKey: string): Promise<string | null> {
-  if (cachedFolderId) return cachedFolderId;
+const folderCache: Record<string, string> = {};
+async function getOrCreateFolderId(lovableKey: string, driveKey: string, folderName: string): Promise<string | null> {
+  if (folderCache[folderName]) return folderCache[folderName];
   const headers = {
     Authorization: `Bearer ${lovableKey}`,
     "X-Connection-Api-Key": driveKey,
   };
   const q = encodeURIComponent(
-    `name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
   );
   const findRes = await fetch(
     `${GATEWAY}/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=1`,
@@ -20,22 +25,22 @@ async function getOrCreateFolderId(lovableKey: string, driveKey: string): Promis
   if (findRes.ok) {
     const j = (await findRes.json()) as { files?: Array<{ id: string }> };
     if (j.files && j.files.length > 0) {
-      cachedFolderId = j.files[0].id;
-      return cachedFolderId;
+      folderCache[folderName] = j.files[0].id;
+      return folderCache[folderName];
     }
   }
   const createRes = await fetch(`${GATEWAY}/drive/v3/files?fields=id`, {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json" },
     body: JSON.stringify({
-      name: FOLDER_NAME,
+      name: folderName,
       mimeType: "application/vnd.google-apps.folder",
     }),
   });
   if (!createRes.ok) return null;
   const created = (await createRes.json()) as { id: string };
-  cachedFolderId = created.id;
-  return cachedFolderId;
+  folderCache[folderName] = created.id;
+  return folderCache[folderName];
 }
 
 
@@ -90,13 +95,14 @@ const json = (body: unknown, status = 200) =>
     headers: { "Content-Type": "application/json", ...CORS },
   });
 
-async function uploadToDrive(fileName: string, mimeType: string, b64: string) {
+async function uploadToDrive(fileName: string, mimeType: string, b64: string, folderKey?: string) {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const driveKey = process.env.GOOGLE_DRIVE_API_KEY;
   if (!lovableKey || !driveKey) {
     return { error: "Drive connector not configured" };
   }
-  const folderId = await getOrCreateFolderId(lovableKey, driveKey);
+  const folderName = FOLDER_ALIASES[folderKey || "default"] || DEFAULT_FOLDER;
+  const folderId = await getOrCreateFolderId(lovableKey, driveKey, folderName);
   if (!folderId) return { error: "Could not create or find Drive folder" };
   const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   const boundary = "fsd_boundary_" + Date.now();
@@ -128,7 +134,6 @@ async function uploadToDrive(fileName: string, mimeType: string, b64: string) {
   if (!res.ok) return { error: `Drive upload failed (${res.status}): ${text.slice(0, 300)}` };
   const data = JSON.parse(text) as { id: string; name: string; webViewLink?: string };
 
-  // Make it readable by anyone with link (best effort)
   await fetch(`${GATEWAY}/drive/v3/files/${data.id}/permissions?supportsAllDrives=true`, {
     method: "POST",
     headers: {
@@ -144,6 +149,17 @@ async function uploadToDrive(fileName: string, mimeType: string, b64: string) {
     viewUrl: data.webViewLink || `https://drive.google.com/file/d/${data.id}/view`,
     previewUrl: `https://drive.google.com/file/d/${data.id}/preview`,
   };
+}
+
+async function ensureFolders() {
+  const lovableKey = process.env.LOVABLE_API_KEY;
+  const driveKey = process.env.GOOGLE_DRIVE_API_KEY;
+  if (!lovableKey || !driveKey) return { error: "Drive connector not configured" };
+  const results: Record<string, string | null> = {};
+  for (const [key, name] of Object.entries(FOLDER_ALIASES)) {
+    results[key] = await getOrCreateFolderId(lovableKey, driveKey, name);
+  }
+  return { folders: results };
 }
 
 export const Route = createFileRoute("/api/public/gas")({
@@ -176,6 +192,23 @@ export const Route = createFileRoute("/api/public/gas")({
           const sheets = (data ?? []).map((r) => ({ id: Number(r.id), name: r.name, rawUrl: r.raw_url, embedUrl: r.embed_url ?? "" }));
           return json({ sheets });
         }
+        if (action === "getAoc") {
+          const t = supabaseAdmin.from("fsd_aoc_companies" as never) as unknown as { select: (s: string) => { order: (c: string, o: { ascending: boolean }) => Promise<{ data: Array<Record<string, unknown>> | null; error: { message: string } | null }> } };
+          const { data, error } = await t.select("*").order("id", { ascending: true });
+          if (error) return json({ aoc: [], error: error.message }, 500);
+          const aoc = (data ?? []).map((r) => ({ id: Number(r.id), name: r.name, operator: r.operator ?? "", contact: r.contact ?? "", note: r.note ?? "", phases: r.phases ?? {}, files: r.files ?? [], docIds: r.doc_ids ?? [] }));
+          return json({ aoc });
+        }
+        if (action === "getHr") {
+          const t = supabaseAdmin.from("fsd_hr_employees" as never) as unknown as { select: (s: string) => { order: (c: string, o: { ascending: boolean }) => Promise<{ data: Array<Record<string, unknown>> | null; error: { message: string } | null }> } };
+          const { data, error } = await t.select("*").order("id", { ascending: true });
+          if (error) return json({ hr: [], error: error.message }, 500);
+          const hr = (data ?? []).map((r) => ({ id: Number(r.id), name: r.name, position: r.position ?? "", department: r.department ?? "", email: r.email ?? "", phone: r.phone ?? "", photo: r.photo ?? "", bio: r.bio ?? "", courses: r.courses ?? [] }));
+          return json({ hr });
+        }
+        if (action === "ensureFolders") {
+          return json(await ensureFolders());
+        }
         return json({ ok: true });
       },
       POST: async ({ request }) => {
@@ -188,6 +221,7 @@ export const Route = createFileRoute("/api/public/gas")({
             String(payload.fileName ?? "file"),
             String(payload.mimeType ?? "application/octet-stream"),
             String(payload.fileData ?? ""),
+            payload.folder ? String(payload.folder) : undefined,
           );
           return json(r);
         }
@@ -272,6 +306,69 @@ export const Route = createFileRoute("/api/public/gas")({
 
         if (action === "deleteSheet") {
           const { error } = await supabaseAdmin.from("fsd_sheets").delete().eq("id", Number(payload.id));
+          if (error) return json({ error: error.message }, 500);
+          return json({ ok: true });
+        }
+
+        if (action === "saveAoc") {
+          const a = (payload.aoc ?? {}) as Record<string, unknown>;
+          const row = {
+            name: String(a.name ?? ""),
+            operator: a.operator == null ? null : String(a.operator),
+            contact: a.contact == null ? null : String(a.contact),
+            note: a.note == null ? null : String(a.note),
+            phases: a.phases ?? {},
+            files: a.files ?? [],
+            doc_ids: a.docIds ?? [],
+          };
+          const t = supabaseAdmin.from("fsd_aoc_companies" as never) as unknown as {
+            update: (v: Record<string, unknown>) => { eq: (c: string, v: unknown) => { select: () => { maybeSingle: () => Promise<{ data: { id: number } | null; error: { message: string } | null }> } } };
+            insert: (v: Record<string, unknown>) => { select: () => { single: () => Promise<{ data: { id: number }; error: { message: string } | null }> } };
+          };
+          if (a.id) {
+            const { data, error } = await t.update({ ...row, updated_at: new Date().toISOString() }).eq("id", Number(a.id)).select().maybeSingle();
+            if (error) return json({ error: error.message }, 500);
+            return json({ id: data?.id });
+          }
+          const { data, error } = await t.insert(row).select().single();
+          if (error) return json({ error: error.message }, 500);
+          return json({ id: data.id });
+        }
+
+        if (action === "deleteAoc") {
+          const { error } = await (supabaseAdmin.from("fsd_aoc_companies" as never) as unknown as { delete: () => { eq: (c: string, v: unknown) => Promise<{ error: { message: string } | null }> } }).delete().eq("id", Number(payload.id));
+          if (error) return json({ error: error.message }, 500);
+          return json({ ok: true });
+        }
+
+        if (action === "saveHr") {
+          const h = (payload.hr ?? {}) as Record<string, unknown>;
+          const row = {
+            name: String(h.name ?? ""),
+            position: h.position == null ? null : String(h.position),
+            department: h.department == null ? null : String(h.department),
+            email: h.email == null ? null : String(h.email),
+            phone: h.phone == null ? null : String(h.phone),
+            photo: h.photo == null ? null : String(h.photo),
+            bio: h.bio == null ? null : String(h.bio),
+            courses: h.courses ?? [],
+          };
+          const t = supabaseAdmin.from("fsd_hr_employees" as never) as unknown as {
+            update: (v: Record<string, unknown>) => { eq: (c: string, v: unknown) => { select: () => { maybeSingle: () => Promise<{ data: { id: number } | null; error: { message: string } | null }> } } };
+            insert: (v: Record<string, unknown>) => { select: () => { single: () => Promise<{ data: { id: number }; error: { message: string } | null }> } };
+          };
+          if (h.id) {
+            const { data, error } = await t.update({ ...row, updated_at: new Date().toISOString() }).eq("id", Number(h.id)).select().maybeSingle();
+            if (error) return json({ error: error.message }, 500);
+            return json({ id: data?.id });
+          }
+          const { data, error } = await t.insert(row).select().single();
+          if (error) return json({ error: error.message }, 500);
+          return json({ id: data.id });
+        }
+
+        if (action === "deleteHr") {
+          const { error } = await (supabaseAdmin.from("fsd_hr_employees" as never) as unknown as { delete: () => { eq: (c: string, v: unknown) => Promise<{ error: { message: string } | null }> } }).delete().eq("id", Number(payload.id));
           if (error) return json({ error: error.message }, 500);
           return json({ ok: true });
         }
