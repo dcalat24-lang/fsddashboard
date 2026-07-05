@@ -44,6 +44,8 @@ let adminMenuItems = [
   {id:'dash',     label:'Dashboard',          icon:'fa-tachometer-alt', visible:true},
   {id:'docs',     label:'All Documents',       icon:'fa-file-alt',       visible:true},
   {id:'track',    label:'Document Tracking',   icon:'fa-route',          visible:true},
+  {id:'aoc',      label:'AOC Tracking',        icon:'fa-plane-departure',visible:true},
+  {id:'hr',       label:'HR Management',       icon:'fa-id-badge',       visible:true},
   {id:'users',    label:'User Management',     icon:'fa-users-cog',      visible:true},
   {id:'customize',label:'Customize',           icon:'fa-sliders-h',      visible:true},
 ];
@@ -51,7 +53,10 @@ let staffMenuItems = [
   {id:'dash',    label:'Dashboard',         icon:'fa-tachometer-alt', visible:true},
   {id:'docs',    label:'All Documents',     icon:'fa-file-alt',       visible:true},
   {id:'track',   label:'Document Tracking', icon:'fa-route',          visible:true},
+  {id:'aoc',     label:'AOC Tracking',      icon:'fa-plane-departure',visible:true},
+  {id:'hr',      label:'HR Management',     icon:'fa-id-badge',       visible:true},
 ];
+
 let customPages=[], cpNid=1;
 let currentPageKey=null, currentPageType=null; // for restore + auto refresh
 
