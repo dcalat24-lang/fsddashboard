@@ -575,22 +575,13 @@ function buildTL(cur,d){
     {key:'done',sm:SM.done,match:['done']},
   ];
   const ord={head:0,pel:1,ops:1,air:1,dg:2,done:3};const ci=ord[cur]??0;
-  const notes=d&&Array.isArray(d.statusNotes)?d.statusNotes:null;
   return steps.map((st,i)=>{
     const cls=i<ci?'done':i===ci?'active':'pending';
     const icon=st.sm?st.sm.icon:st.icon; const lbl=st.sm?st.sm.label:st.label;
-    let noteHtml='';
-    if(notes){
-      const ns=notes.filter(n=>st.match.includes(n.status)&&n.note);
-      if(ns.length){
-        const last=ns[ns.length-1];
-        noteHtml=`<div style="font-size:10.5px;color:var(--g700);margin-top:4px;padding:4px 6px;background:#FFFDE7;border-left:2px solid var(--yw);border-radius:3px;text-align:left;max-width:150px;white-space:normal;word-break:break-word"><i class="fas fa-sticky-note" style="color:var(--yw);font-size:9px"></i> ${escHtml(last.note)}${ns.length>1?` <span style="color:var(--g400)">+${ns.length-1}</span>`:''}</div>`;
-      }
-    }
-    const addBtn=d?`<button onclick="event.stopPropagation();addStepNote(${d.id},'${st.key}')" title="Add note" style="background:none;border:1px dashed var(--g300);color:var(--p);cursor:pointer;font-size:10px;margin-top:4px;padding:2px 6px;border-radius:4px"><i class="fas fa-plus"></i> Note</button>`:'';
-    return`<div class="ps ${cls}"><div class="pd"><i class="fas ${icon}"></i></div><div class="pl">${lbl}</div>${i===ci?'<div style="font-size:9px;color:var(--p);margin-top:2px">▲ Current</div>':''}${noteHtml}${addBtn}</div>`;
+    return`<div class="ps ${cls}"><div class="pd"><i class="fas ${icon}"></i></div><div class="pl">${lbl}</div>${i===ci?'<div style="font-size:9px;color:var(--p);margin-top:2px">▲ Current</div>':''}</div>`;
   }).join('');
 }
+
 function escHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 async function addStepNote(docId,stepKey){
   const d=DB.docs.find(x=>x.id===docId);if(!d)return;
