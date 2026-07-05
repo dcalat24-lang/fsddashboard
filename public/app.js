@@ -557,6 +557,8 @@ function openDet(id){
     </div>
     <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Status Timeline</div>
     <div class="pipe" style="background:var(--g50);padding:12px;border-radius:var(--r);margin-bottom:16px">${buildTL(d.status,d)}</div>
+    ${trackNoteHistory(d)}
+
     <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Attachments (${d.files.length})</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px">
       ${d.files.length?d.files.map(f=>`<div class="fi2" style="cursor:pointer" onclick="viewFile('${f.name}','${encodeURIComponent(f.url||'')}','${f.type||''}')">
