@@ -345,6 +345,85 @@
   </div>
 </div>
 
+<!-- AOC Company Modal -->
+<div class="mo" id="moAoc">
+  <div class="md" style="max-width:640px">
+    <div class="mh">
+      <h3><i class="fas fa-plane-departure" style="color:var(--p)"></i><span id="moAocT">Add Company</span></h3>
+      <button class="mc" onclick="closeMo('moAoc')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb">
+      <div class="fr c2">
+        <div class="ff"><label>Company Name *</label><input id="aName" placeholder="Company / Operator name"></div>
+        <div class="ff"><label>AOC Operator</label><input id="aOperator" placeholder="Operator code"></div>
+      </div>
+      <div class="fr c2">
+        <div class="ff"><label>Contact</label><input id="aContact" placeholder="Phone / Email"></div>
+        <div class="ff"><label>Notes</label><input id="aNote" placeholder="Short remarks"></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ol" onclick="closeMo('moAoc')">Cancel</button>
+      <button class="btn btn-p" onclick="saveAocCompany()"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- AOC Attach Document Search Modal -->
+<div class="mo" id="moAocDoc">
+  <div class="md" style="max-width:640px">
+    <div class="mh">
+      <h3><i class="fas fa-search" style="color:var(--cy)"></i> Attach Document from All Documents</h3>
+      <button class="mc" onclick="closeMo('moAocDoc')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb">
+      <div class="ff"><label>Search by Document / FSD / DCAL No</label>
+        <input id="aocDocSrch" placeholder="Type document number..." oninput="refAocDocSearch()"></div>
+      <div class="tw" style="margin-top:12px;max-height:340px;overflow:auto">
+        <table><thead><tr><th>Doc No</th><th>FSD No</th><th>Subject</th><th></th></tr></thead>
+        <tbody id="aocDocTb"></tbody></table>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-ol" onclick="closeMo('moAocDoc')">Close</button></div>
+  </div>
+</div>
+
+<!-- HR Employee Modal -->
+<div class="mo" id="moHr">
+  <div class="md" style="max-width:640px">
+    <div class="mh">
+      <h3><i class="fas fa-id-badge" style="color:var(--p)"></i><span id="moHrT">Add Employee</span></h3>
+      <button class="mc" onclick="closeMo('moHr')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb">
+      <div class="fr c2">
+        <div class="ff"><label>Full Name *</label><input id="hName" placeholder="First Last"></div>
+        <div class="ff"><label>Position</label><input id="hPos" placeholder="e.g. Inspector"></div>
+      </div>
+      <div class="fr c2">
+        <div class="ff"><label>Department</label><input id="hDept" placeholder="Department"></div>
+        <div class="ff"><label>Phone</label><input id="hPhone" placeholder="+66..."></div>
+      </div>
+      <div class="fr c2">
+        <div class="ff"><label>Email</label><input id="hEmail" placeholder="name@fsd.go.th"></div>
+        <div class="ff"><label>Profile Photo</label><input type="file" id="hPhoto" accept="image/*" onchange="onHrPhoto(event)"></div>
+      </div>
+      <div class="fr" id="hPhotoRow" style="display:none">
+        <div class="ff"><label>Preview</label>
+          <div style="display:flex;align-items:center;gap:10px"><img id="hPhotoPrev" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:1px solid var(--g200)"><button type="button" class="btn btn-ol btn-sm" onclick="clearHrPhoto()"><i class="fas fa-times"></i> Remove</button></div>
+        </div>
+      </div>
+      <div class="fr"><div class="ff"><label>Bio / Notes</label><textarea id="hBio" placeholder="Short biography..."></textarea></div></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ol" onclick="closeMo('moHr')">Cancel</button>
+      <button class="btn btn-p" onclick="saveHrEmployee()"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+
+
 <script src="app.js"></script>
 </body>
 </html>
