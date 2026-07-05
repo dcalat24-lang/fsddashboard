@@ -258,6 +258,7 @@ function initials(n){const a=(n||'').split(' ');return((a[0]?.[0]||'')+(a[1]?.[0
 //  NAV
 // ════════════════════════════════════════════════
 const TITLES={dash:'Dashboard',docs:'All Documents',track:'Document Tracking',stats:'Statistics FSD',
+  aoc:'AOC Tracking',hr:'HR Management',
   users:'User Management',customize:'Customize',sdash:'Dashboard',mydocs:'My Documents',
   mytrack:'Track My Docs',profile:'Edit Profile'};
 
@@ -307,10 +308,12 @@ function renderPage(p,el){
   const R={
     dash:renderDash, docs:renderDocs, track:e=>renderTrack(e,'all',false),
     users:renderUsers, customize:renderCustomize,
+    aoc:renderAoc, hr:renderHr,
     sdash:renderDash, mydocs:renderDocs, mytrack:e=>renderTrack(e,'all',false), profile:renderProfile,
   };
   if(R[p]) R[p](el);
 }
+
 
 function goSheetPage(id){
   deactivateAll();
