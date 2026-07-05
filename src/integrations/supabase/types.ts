@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      fsd_aoc_companies: {
+        Row: {
+          contact: string | null
+          created_at: string
+          doc_ids: Json
+          files: Json
+          id: number
+          name: string
+          note: string | null
+          operator: string | null
+          phases: Json
+          updated_at: string
+        }
+        Insert: {
+          contact?: string | null
+          created_at?: string
+          doc_ids?: Json
+          files?: Json
+          id?: number
+          name: string
+          note?: string | null
+          operator?: string | null
+          phases?: Json
+          updated_at?: string
+        }
+        Update: {
+          contact?: string | null
+          created_at?: string
+          doc_ids?: Json
+          files?: Json
+          id?: number
+          name?: string
+          note?: string | null
+          operator?: string | null
+          phases?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fsd_documents: {
         Row: {
           created_at: string
@@ -70,6 +109,48 @@ export type Database = {
           status_notes?: Json
           subject?: string | null
           uid?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fsd_hr_employees: {
+        Row: {
+          bio: string | null
+          courses: Json
+          created_at: string
+          department: string | null
+          email: string | null
+          id: number
+          name: string
+          phone: string | null
+          photo: string | null
+          position: string | null
+          updated_at: string
+        }
+        Insert: {
+          bio?: string | null
+          courses?: Json
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          id?: number
+          name: string
+          phone?: string | null
+          photo?: string | null
+          position?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bio?: string | null
+          courses?: Json
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          id?: number
+          name?: string
+          phone?: string | null
+          photo?: string | null
+          position?: string | null
           updated_at?: string
         }
         Relationships: []
