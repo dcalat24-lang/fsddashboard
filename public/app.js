@@ -1550,7 +1550,19 @@ async function aocUploadFiles(id,key,files,inp){
 }
 function aocRemoveFile(id,key,idx){const a=aocList.find(x=>x.id===id);if(!a||!a.phases?.[key]?.files)return;a.phases[key].files.splice(idx,1);aocPersist(a);refAoc();}
 function aocRemoveDoc(id,did){const a=aocList.find(x=>x.id===id);if(!a)return;a.docIds=(a.docIds||[]).filter(x=>x!==did);aocPersist(a);refAoc();}
-function openAocDocSearch(aocId){_aocDocTarget=aocId;document.getElementById('aocDocSrch').value='';refAocDocSearch();openMo('moAocDoc');}
+function aocRemovePhaseDoc(id,key,did){const a=aocList.find(x=>x.id===id);if(!a?.phases?.[key])return;a.phases[key].docIds=(a.phases[key].docIds||[]).filter(x=>x!==did);aocPersist(a);refAoc();}
+function aocSavePhaseNote(id,key){
+  const a=aocList.find(x=>x.id===id);if(!a)return;
+  const ta=document.getElementById(`aocPn-${id}-${key}`);if(!ta)return;
+  const text=(ta.value||'').trim();if(!text){Swal.fire({icon:'info',title:'Note is empty',toast:true,position:'top-end',showConfirmButton:false,timer:1200});return;}
+  if(!a.phases)a.phases={};if(!a.phases[key])a.phases[key]={};
+  if(!Array.isArray(a.phases[key].notes))a.phases[key].notes=[];
+  a.phases[key].notes.push({text,at:Date.now(),by:CU?.name||CU?.u||''});
+  a.phases[key].note='';
+  aocPersist(a);refAoc();
+  Swal.fire({icon:'success',title:'Note saved',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
+}
+function openAocDocSearch(aocId,phaseKey){_aocDocTarget={aocId,phaseKey};document.getElementById('aocDocSrch').value='';refAocDocSearch();openMo('moAocDoc');}
 function refAocDocSearch(){
   const q=(v('aocDocSrch')||'').toLowerCase();
   const tb=document.getElementById('aocDocTb');if(!tb)return;
@@ -1563,9 +1575,18 @@ function refAocDocSearch(){
   </tr>`).join('')||`<tr><td colspan="4"><div class="empty" style="padding:16px"><p>No matches</p></div></td></tr>`;
 }
 function aocAttachDoc(did){
-  const a=aocList.find(x=>x.id===_aocDocTarget);if(!a)return;
-  if(!Array.isArray(a.docIds))a.docIds=[];
-  if(!a.docIds.includes(did))a.docIds.push(did);
+  const t=_aocDocTarget;if(!t)return;
+  const aocId=typeof t==='object'?t.aocId:t;
+  const phaseKey=typeof t==='object'?t.phaseKey:null;
+  const a=aocList.find(x=>x.id===aocId);if(!a)return;
+  if(phaseKey){
+    if(!a.phases)a.phases={};if(!a.phases[phaseKey])a.phases[phaseKey]={};
+    if(!Array.isArray(a.phases[phaseKey].docIds))a.phases[phaseKey].docIds=[];
+    if(!a.phases[phaseKey].docIds.includes(did))a.phases[phaseKey].docIds.push(did);
+  } else {
+    if(!Array.isArray(a.docIds))a.docIds=[];
+    if(!a.docIds.includes(did))a.docIds.push(did);
+  }
   aocPersist(a);closeMo('moAocDoc');refAoc();
   Swal.fire({icon:'success',title:'Document attached',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
 }
