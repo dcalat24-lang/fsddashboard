@@ -1620,6 +1620,7 @@ function refHr(){
           <div style="font-size:11.5px;color:var(--g500);margin-top:4px">${h.email?`<i class="fas fa-envelope"></i> ${escHtml(h.email)}`:''} ${h.phone?`<br><i class="fas fa-phone"></i> ${escHtml(h.phone)}`:''}</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="btn btn-p btn-sm btn-ico" title="View" onclick="openHrDetail(${h.id})"><i class="fas fa-eye"></i></button>
           <button class="btn btn-ol btn-sm btn-ico" onclick="openEditHr(${h.id})"><i class="fas fa-edit"></i></button>
           <button class="btn btn-d btn-sm btn-ico" onclick="delHr(${h.id})"><i class="fas fa-trash"></i></button>
         </div>
