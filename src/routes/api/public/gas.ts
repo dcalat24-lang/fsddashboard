@@ -352,6 +352,14 @@ export const Route = createFileRoute("/api/public/gas")({
             photo: h.photo == null ? null : String(h.photo),
             bio: h.bio == null ? null : String(h.bio),
             courses: h.courses ?? [],
+            first_name: h.firstName == null ? null : String(h.firstName),
+            last_name: h.lastName == null ? null : String(h.lastName),
+            birth_date: h.birthDate ? String(h.birthDate) : null,
+            address: h.address == null ? null : String(h.address),
+            start_date: h.startDate ? String(h.startDate) : null,
+            education: h.education ?? [],
+            work_history: h.workHistory ?? [],
+            cert_files: h.certFiles ?? [],
           };
           const t = supabaseAdmin.from("fsd_hr_employees" as never) as unknown as {
             update: (v: Record<string, unknown>) => { eq: (c: string, v: unknown) => { select: () => { maybeSingle: () => Promise<{ data: { id: number } | null; error: { message: string } | null }> } } };
