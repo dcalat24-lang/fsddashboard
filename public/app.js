@@ -1292,7 +1292,7 @@ function renderSheetPage(s,el){
   // Google Sheets embed already streams changes from Google — no need to
   // forcibly reload the iframe (that causes a visible flicker).
   if(shTimers[s.id])clearInterval(shTimers[s.id]);
-  el.innerHTML=`<div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 110px)"><div class="ch">
+  el.innerHTML=`<div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 56px);margin:-28px;border-radius:0;box-shadow:none;border:none"><div class="ch">
     <h3><i class="fas fa-table" style="color:var(--gn)"></i> ${s.name}</h3>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span style="font-size:11px;color:var(--g400)">Live · Updated <strong id="sht-${s.id}">${new Date(s.lastFetch||Date.now()).toLocaleTimeString()}</strong></span>
