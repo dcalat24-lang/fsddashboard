@@ -390,35 +390,67 @@
 
 <!-- HR Employee Modal -->
 <div class="mo" id="moHr">
-  <div class="md" style="max-width:640px">
+  <div class="md" style="max-width:800px">
     <div class="mh">
       <h3><i class="fas fa-id-badge" style="color:var(--p)"></i><span id="moHrT">Add Employee</span></h3>
       <button class="mc" onclick="closeMo('moHr')"><i class="fas fa-times"></i></button>
     </div>
     <div class="mb">
       <div class="fr c2">
-        <div class="ff"><label>Full Name *</label><input id="hName" placeholder="First Last"></div>
+        <div class="ff"><label>First Name *</label><input id="hFirst" placeholder="First name"></div>
+        <div class="ff"><label>Last Name</label><input id="hLast" placeholder="Last name"></div>
+      </div>
+      <div class="fr c2">
         <div class="ff"><label>Position</label><input id="hPos" placeholder="e.g. Inspector"></div>
-      </div>
-      <div class="fr c2">
         <div class="ff"><label>Department</label><input id="hDept" placeholder="Department"></div>
-        <div class="ff"><label>Phone</label><input id="hPhone" placeholder="+66..."></div>
       </div>
       <div class="fr c2">
-        <div class="ff"><label>Email</label><input id="hEmail" placeholder="name@fsd.go.th"></div>
-        <div class="ff"><label>Profile Photo</label><input type="file" id="hPhoto" accept="image/*" onchange="onHrPhoto(event)"></div>
+        <div class="ff"><label>Date of Birth</label><input id="hBirth" type="date" onchange="hrCalcAge()"></div>
+        <div class="ff"><label>Age</label><input id="hAge" placeholder="Auto-calculated" readonly></div>
       </div>
-      <div class="fr" id="hPhotoRow" style="display:none">
-        <div class="ff"><label>Preview</label>
+      <div class="fr c2">
+        <div class="ff"><label>Phone</label><input id="hPhone" placeholder="+66..."></div>
+        <div class="ff"><label>Email</label><input id="hEmail" placeholder="name@fsd.go.th"></div>
+      </div>
+      <div class="fr"><div class="ff"><label>Current Address</label><textarea id="hAddr" placeholder="Full address..." style="min-height:60px"></textarea></div></div>
+      <div class="fr c2">
+        <div class="ff"><label>Start Date (Employment)</label><input id="hStart" type="date" onchange="hrCalcTenure()"></div>
+        <div class="ff"><label>Years of Service</label><input id="hTenure" placeholder="Auto-calculated" readonly></div>
+      </div>
+      <div class="fr c2">
+        <div class="ff"><label>Education Level</label><input id="hEduLvl" placeholder="e.g. Bachelor's Degree"></div>
+        <div class="ff"><label>Graduation Year</label><input id="hEduYear" placeholder="e.g. 2565"></div>
+      </div>
+      <div class="fr"><div class="ff"><label>Education Certificate (PDF)</label>
+        <input type="file" id="hCert" accept="application/pdf" multiple onchange="onHrCert(event)">
+        <div id="hCertList" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div></div>
+      <div class="fr c2">
+        <div class="ff"><label>Profile Photo</label><input type="file" id="hPhoto" accept="image/*" onchange="onHrPhoto(event)"></div>
+        <div class="ff" id="hPhotoRow" style="display:none"><label>Preview</label>
           <div style="display:flex;align-items:center;gap:10px"><img id="hPhotoPrev" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:1px solid var(--g200)"><button type="button" class="btn btn-ol btn-sm" onclick="clearHrPhoto()"><i class="fas fa-times"></i> Remove</button></div>
         </div>
       </div>
       <div class="fr"><div class="ff"><label>Bio / Notes</label><textarea id="hBio" placeholder="Short biography..."></textarea></div></div>
+      <!-- Hidden legacy field kept for compatibility -->
+      <input type="hidden" id="hName">
     </div>
     <div class="mf">
       <button class="btn btn-ol" onclick="closeMo('moHr')">Cancel</button>
       <button class="btn btn-p" onclick="saveHrEmployee()"><i class="fas fa-save"></i> Save</button>
     </div>
+  </div>
+</div>
+
+<!-- HR Detail Modal -->
+<div class="mo" id="moHrDet">
+  <div class="md" style="max-width:900px">
+    <div class="mh">
+      <h3><i class="fas fa-user" style="color:var(--p)"></i> Employee Details</h3>
+      <button class="mc" onclick="closeMo('moHrDet')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="mb" id="hrDetBody"></div>
+    <div class="mf"><button class="btn btn-ol" onclick="closeMo('moHrDet')">Close</button></div>
   </div>
 </div>
 

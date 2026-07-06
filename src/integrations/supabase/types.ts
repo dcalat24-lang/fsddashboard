@@ -115,43 +115,67 @@ export type Database = {
       }
       fsd_hr_employees: {
         Row: {
+          address: string | null
           bio: string | null
+          birth_date: string | null
+          cert_files: Json
           courses: Json
           created_at: string
           department: string | null
+          education: Json
           email: string | null
+          first_name: string | null
           id: number
+          last_name: string | null
           name: string
           phone: string | null
           photo: string | null
           position: string | null
+          start_date: string | null
           updated_at: string
+          work_history: Json
         }
         Insert: {
+          address?: string | null
           bio?: string | null
+          birth_date?: string | null
+          cert_files?: Json
           courses?: Json
           created_at?: string
           department?: string | null
+          education?: Json
           email?: string | null
+          first_name?: string | null
           id?: number
+          last_name?: string | null
           name: string
           phone?: string | null
           photo?: string | null
           position?: string | null
+          start_date?: string | null
           updated_at?: string
+          work_history?: Json
         }
         Update: {
+          address?: string | null
           bio?: string | null
+          birth_date?: string | null
+          cert_files?: Json
           courses?: Json
           created_at?: string
           department?: string | null
+          education?: Json
           email?: string | null
+          first_name?: string | null
           id?: number
+          last_name?: string | null
           name?: string
           phone?: string | null
           photo?: string | null
           position?: string | null
+          start_date?: string | null
           updated_at?: string
+          work_history?: Json
         }
         Relationships: []
       }

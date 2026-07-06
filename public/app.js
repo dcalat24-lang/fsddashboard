@@ -761,7 +761,7 @@ function buildTkCards(all,tab){
       </div>
       <div class="tc-b">
         <div class="pipe" style="background:var(--g50);padding:10px;border-radius:var(--r)">${buildTL(d.status,d)}</div>
-        ${d.statusNote?`<div style="background:#FFFDE7;border:1px solid #FBC02D;border-radius:var(--r);padding:9px 13px;font-size:12.5px;margin-top:8px"><i class="fas fa-sticky-note" style="color:var(--yw);margin-right:6px"></i>${d.statusNote}</div>`:''}
+        
         ${trackNoteHistory(d)}
         <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
           <button class="btn btn-ol btn-sm" onclick="openDet(${d.id})"><i class="fas fa-eye"></i> Detail</button>
@@ -1292,7 +1292,7 @@ function renderSheetPage(s,el){
   // Google Sheets embed already streams changes from Google — no need to
   // forcibly reload the iframe (that causes a visible flicker).
   if(shTimers[s.id])clearInterval(shTimers[s.id]);
-  el.innerHTML=`<div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 110px)"><div class="ch">
+  el.innerHTML=`<div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 56px);margin:-28px;border-radius:0;box-shadow:none;border:none"><div class="ch">
     <h3><i class="fas fa-table" style="color:var(--gn)"></i> ${s.name}</h3>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span style="font-size:11px;color:var(--g400)">Live · Updated <strong id="sht-${s.id}">${new Date(s.lastFetch||Date.now()).toLocaleTimeString()}</strong></span>
@@ -1469,12 +1469,13 @@ function refAoc(){
       <div class="tc-b">
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap">
           <button class="btn btn-ol btn-sm" onclick="openEditAoc(${a.id})"><i class="fas fa-edit"></i> Edit Info</button>
-          <button class="btn btn-c btn-sm" onclick="openAocDocSearch(${a.id})"><i class="fas fa-search"></i> Attach Document</button>
           <button class="btn btn-d btn-sm" onclick="delAoc(${a.id})"><i class="fas fa-trash"></i> Delete</button>
         </div>
         ${AOC_PHASES.map(p=>{
           const ph=a.phases?.[p.key]||{};
           const files=Array.isArray(ph.files)?ph.files:[];
+          const pDocIds=Array.isArray(ph.docIds)?ph.docIds:[];
+          const noteHist=Array.isArray(ph.notes)?ph.notes:[];
           return `<div style="border:1px solid var(--g200);border-left:4px solid ${p.color};border-radius:var(--r);padding:12px;margin-bottom:10px;background:#fff">
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
               <i class="fas ${p.icon}" style="color:${p.color};font-size:18px"></i>
@@ -1482,29 +1483,40 @@ function refAoc(){
               <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--g600);cursor:pointer">
                 <input type="checkbox" ${ph.done?'checked':''} onchange="aocToggleDone(${a.id},'${p.key}',this.checked)"> Completed
               </label>
-              <label class="btn btn-ol btn-sm" style="cursor:pointer;margin:0"><i class="fas fa-paperclip"></i> Attach
+              <label class="btn btn-ol btn-sm" style="cursor:pointer;margin:0"><i class="fas fa-paperclip"></i> Attach File
                 <input type="file" accept=".pdf,image/jpeg,image/jpg" multiple style="display:none" onchange="aocUploadFiles(${a.id},'${p.key}',this.files,this)">
               </label>
+              <button class="btn btn-c btn-sm" onclick="openAocDocSearch(${a.id},'${p.key}')"><i class="fas fa-search"></i> Attach Document</button>
             </div>
-            <textarea placeholder="Notes for this phase..." onchange="aocSetPhaseNote(${a.id},'${p.key}',this.value)" style="width:100%;margin-top:8px;min-height:52px;font-size:12.5px">${escHtml(ph.note||'')}</textarea>
+            <textarea id="aocPn-${a.id}-${p.key}" placeholder="Notes for this phase..." style="width:100%;margin-top:8px;min-height:52px;font-size:12.5px">${escHtml(ph.note||'')}</textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:6px">
+              <button class="btn btn-p btn-sm" onclick="aocSavePhaseNote(${a.id},'${p.key}')"><i class="fas fa-save"></i> Save Note</button>
+            </div>
             ${files.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${files.map((f,i)=>`
               <div class="fi2" style="cursor:pointer" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','${f.type||''}')">
                 ${ficon(f.type)}<span class="fn" style="max-width:150px">${escHtml(f.name)}</span>
                 <button onclick="event.stopPropagation();aocRemoveFile(${a.id},'${p.key}',${i})" style="background:none;border:none;color:var(--rd);cursor:pointer;font-size:11px"><i class="fas fa-times"></i></button>
               </div>`).join('')}</div>`:''}
+            ${pDocIds.length?`<div style="margin-top:8px">
+              <div style="font-size:10.5px;font-weight:600;color:var(--g500);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Attached Documents (${pDocIds.length})</div>
+              ${pDocIds.map(did=>{const d=DB.docs.find(x=>x.id===did);if(!d)return`<div style="font-size:12px;color:var(--g400)">Doc #${did} (not found)</div>`;
+                return `<div style="display:flex;gap:8px;align-items:center;padding:5px 8px;background:var(--g50);border-radius:6px;margin-bottom:3px">
+                  <code style="font-size:11px">${d.fsdNo}</code>
+                  <span style="flex:1;font-size:12px" class="tdl" onclick="openDet(${d.id})">${escHtml(d.subject)}</span>
+                  ${sbadge(d.status)}
+                  <button class="btn btn-d btn-xs" onclick="aocRemovePhaseDoc(${a.id},'${p.key}',${d.id})"><i class="fas fa-times"></i></button>
+                </div>`;
+              }).join('')}
+            </div>`:''}
+            ${noteHist.length?`<div style="margin-top:8px;background:var(--g50);padding:8px;border-radius:6px">
+              <div style="font-size:10.5px;font-weight:600;color:var(--g500);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-history"></i> Note History (${noteHist.length})</div>
+              ${[...noteHist].reverse().map(n=>`<div style="padding:6px 8px;background:#fff;border-left:3px solid ${p.color};border-radius:4px;margin-bottom:4px">
+                <div style="font-size:12px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${escHtml(n.text||'')}</div>
+                <div style="font-size:10px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}${n.by?' · '+escHtml(n.by):''}</div>
+              </div>`).join('')}
+            </div>`:''}
           </div>`;
         }).join('')}
-        ${(a.docIds||[]).length?`<div style="margin-top:10px">
-          <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Attached Documents (${a.docIds.length})</div>
-          ${a.docIds.map(did=>{const d=DB.docs.find(x=>x.id===did);if(!d)return`<div style="font-size:12px;color:var(--g400)">Doc #${did} (not found)</div>`;
-            return `<div style="display:flex;gap:8px;align-items:center;padding:6px 10px;background:var(--g50);border-radius:6px;margin-bottom:4px">
-              <code style="font-size:11px">${d.fsdNo}</code>
-              <span style="flex:1;font-size:12.5px" class="tdl" onclick="openDet(${d.id})">${escHtml(d.subject)}</span>
-              ${sbadge(d.status)}
-              <button class="btn btn-d btn-xs" onclick="aocRemoveDoc(${a.id},${d.id})"><i class="fas fa-times"></i></button>
-            </div>`;
-          }).join('')}
-        </div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1538,7 +1550,19 @@ async function aocUploadFiles(id,key,files,inp){
 }
 function aocRemoveFile(id,key,idx){const a=aocList.find(x=>x.id===id);if(!a||!a.phases?.[key]?.files)return;a.phases[key].files.splice(idx,1);aocPersist(a);refAoc();}
 function aocRemoveDoc(id,did){const a=aocList.find(x=>x.id===id);if(!a)return;a.docIds=(a.docIds||[]).filter(x=>x!==did);aocPersist(a);refAoc();}
-function openAocDocSearch(aocId){_aocDocTarget=aocId;document.getElementById('aocDocSrch').value='';refAocDocSearch();openMo('moAocDoc');}
+function aocRemovePhaseDoc(id,key,did){const a=aocList.find(x=>x.id===id);if(!a?.phases?.[key])return;a.phases[key].docIds=(a.phases[key].docIds||[]).filter(x=>x!==did);aocPersist(a);refAoc();}
+function aocSavePhaseNote(id,key){
+  const a=aocList.find(x=>x.id===id);if(!a)return;
+  const ta=document.getElementById(`aocPn-${id}-${key}`);if(!ta)return;
+  const text=(ta.value||'').trim();if(!text){Swal.fire({icon:'info',title:'Note is empty',toast:true,position:'top-end',showConfirmButton:false,timer:1200});return;}
+  if(!a.phases)a.phases={};if(!a.phases[key])a.phases[key]={};
+  if(!Array.isArray(a.phases[key].notes))a.phases[key].notes=[];
+  a.phases[key].notes.push({text,at:Date.now(),by:CU?.name||CU?.u||''});
+  a.phases[key].note='';
+  aocPersist(a);refAoc();
+  Swal.fire({icon:'success',title:'Note saved',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
+}
+function openAocDocSearch(aocId,phaseKey){_aocDocTarget={aocId,phaseKey};document.getElementById('aocDocSrch').value='';refAocDocSearch();openMo('moAocDoc');}
 function refAocDocSearch(){
   const q=(v('aocDocSrch')||'').toLowerCase();
   const tb=document.getElementById('aocDocTb');if(!tb)return;
@@ -1551,9 +1575,18 @@ function refAocDocSearch(){
   </tr>`).join('')||`<tr><td colspan="4"><div class="empty" style="padding:16px"><p>No matches</p></div></td></tr>`;
 }
 function aocAttachDoc(did){
-  const a=aocList.find(x=>x.id===_aocDocTarget);if(!a)return;
-  if(!Array.isArray(a.docIds))a.docIds=[];
-  if(!a.docIds.includes(did))a.docIds.push(did);
+  const t=_aocDocTarget;if(!t)return;
+  const aocId=typeof t==='object'?t.aocId:t;
+  const phaseKey=typeof t==='object'?t.phaseKey:null;
+  const a=aocList.find(x=>x.id===aocId);if(!a)return;
+  if(phaseKey){
+    if(!a.phases)a.phases={};if(!a.phases[phaseKey])a.phases[phaseKey]={};
+    if(!Array.isArray(a.phases[phaseKey].docIds))a.phases[phaseKey].docIds=[];
+    if(!a.phases[phaseKey].docIds.includes(did))a.phases[phaseKey].docIds.push(did);
+  } else {
+    if(!Array.isArray(a.docIds))a.docIds=[];
+    if(!a.docIds.includes(did))a.docIds.push(did);
+  }
   aocPersist(a);closeMo('moAocDoc');refAoc();
   Swal.fire({icon:'success',title:'Document attached',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
 }
@@ -1587,6 +1620,7 @@ function refHr(){
           <div style="font-size:11.5px;color:var(--g500);margin-top:4px">${h.email?`<i class="fas fa-envelope"></i> ${escHtml(h.email)}`:''} ${h.phone?`<br><i class="fas fa-phone"></i> ${escHtml(h.phone)}`:''}</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="btn btn-p btn-sm btn-ico" title="View" onclick="openHrDetail(${h.id})"><i class="fas fa-eye"></i></button>
           <button class="btn btn-ol btn-sm btn-ico" onclick="openEditHr(${h.id})"><i class="fas fa-edit"></i></button>
           <button class="btn btn-d btn-sm btn-ico" onclick="delHr(${h.id})"><i class="fas fa-trash"></i></button>
         </div>
@@ -1614,16 +1648,80 @@ function refHr(){
     </div>`;
   }).join('')}</div>`;
 }
-function clearHrPhoto(){_hrPhoto='';document.getElementById('hPhoto').value='';document.getElementById('hPhotoRow').style.display='none';}
-function setHrPhotoPreview(d){_hrPhoto=d||'';const row=document.getElementById('hPhotoRow');if(!d){row.style.display='none';return;}document.getElementById('hPhotoPrev').src=d;row.style.display='';}
+function clearHrPhoto(){_hrPhoto='';const p=document.getElementById('hPhoto');if(p)p.value='';const r=document.getElementById('hPhotoRow');if(r)r.style.display='none';}
+function setHrPhotoPreview(d){_hrPhoto=d||'';const row=document.getElementById('hPhotoRow');if(!d){if(row)row.style.display='none';return;}document.getElementById('hPhotoPrev').src=d;row.style.display='';}
 function onHrPhoto(e){const f=e.target.files&&e.target.files[0];if(!f)return;resizeImageToDataUrl(f,256).then(setHrPhotoPreview);}
-function openAddHr(){eHrId=null;document.getElementById('moHrT').textContent='Add Employee';['hName','hPos','hDept','hEmail','hPhone','hBio'].forEach(id=>document.getElementById(id).value='');clearHrPhoto();openMo('moHr');}
-function openEditHr(id){const h=hrList.find(x=>x.id===id);if(!h)return;eHrId=id;document.getElementById('moHrT').textContent='Edit Employee';document.getElementById('hName').value=h.name||'';document.getElementById('hPos').value=h.position||'';document.getElementById('hDept').value=h.department||'';document.getElementById('hEmail').value=h.email||'';document.getElementById('hPhone').value=h.phone||'';document.getElementById('hBio').value=h.bio||'';if(h.photo)setHrPhotoPreview(h.photo);else clearHrPhoto();openMo('moHr');}
+function _yearsBetween(iso){if(!iso)return '';const b=new Date(iso);if(isNaN(b))return '';const n=new Date();let a=n.getFullYear()-b.getFullYear();const m=n.getMonth()-b.getMonth();if(m<0||(m===0&&n.getDate()<b.getDate()))a--;return a>=0?a+' years':'';}
+function hrCalcAge(){document.getElementById('hAge').value=_yearsBetween(v('hBirth'));}
+function hrCalcTenure(){document.getElementById('hTenure').value=_yearsBetween(v('hStart'));}
+let _hrCertFiles=[];
+function renderHrCertList(){
+  const box=document.getElementById('hCertList');if(!box)return;
+  box.innerHTML=_hrCertFiles.map((f,i)=>`<div class="fi2" style="cursor:pointer" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','pdf')">${ficon('pdf')}<span class="fn" style="max-width:180px">${escHtml(f.name)}</span><button onclick="event.stopPropagation();_hrCertFiles.splice(${i},1);renderHrCertList()" style="background:none;border:none;color:var(--rd);cursor:pointer"><i class="fas fa-times"></i></button></div>`).join('');
+}
+async function onHrCert(e){
+  const files=Array.from(e.target.files||[]);e.target.value='';
+  if(!files.length)return;
+  showSpin('Uploading certificate(s)...');
+  for(const f of files){
+    try{const b64=await fileToB64(f);const r=await gasPost({action:'uploadFile',fileName:f.name,mimeType:f.type||'application/pdf',fileData:b64,folder:'hr'});
+      if(r&&r.id)_hrCertFiles.push({name:f.name,url:r.viewUrl,previewUrl:r.previewUrl});
+      else Swal.fire({icon:'error',title:'Upload failed',text:r?.error||'Unknown error'});
+    }catch(err){console.warn(err);}
+  }
+  hideSpin();renderHrCertList();
+}
+function openAddHr(){
+  eHrId=null;_hrCertFiles=[];
+  document.getElementById('moHrT').textContent='Add Employee';
+  ['hFirst','hLast','hPos','hDept','hBirth','hAge','hPhone','hEmail','hAddr','hStart','hTenure','hEduLvl','hEduYear','hBio','hName'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  clearHrPhoto();renderHrCertList();openMo('moHr');
+}
+function openEditHr(id){
+  const h=hrList.find(x=>x.id===id);if(!h)return;
+  eHrId=id;
+  document.getElementById('moHrT').textContent='Edit Employee';
+  const fn=h.firstName||((h.name||'').split(' ')[0]||'');
+  const ln=h.lastName||((h.name||'').split(' ').slice(1).join(' ')||'');
+  document.getElementById('hFirst').value=fn;
+  document.getElementById('hLast').value=ln;
+  document.getElementById('hPos').value=h.position||'';
+  document.getElementById('hDept').value=h.department||'';
+  document.getElementById('hBirth').value=h.birthDate||'';
+  document.getElementById('hPhone').value=h.phone||'';
+  document.getElementById('hEmail').value=h.email||'';
+  document.getElementById('hAddr').value=h.address||'';
+  document.getElementById('hStart').value=h.startDate||'';
+  const edu=(Array.isArray(h.education)&&h.education[0])||{};
+  document.getElementById('hEduLvl').value=edu.level||'';
+  document.getElementById('hEduYear').value=edu.year||'';
+  document.getElementById('hBio').value=h.bio||'';
+  document.getElementById('hName').value=h.name||'';
+  _hrCertFiles=Array.isArray(h.certFiles)?[...h.certFiles]:[];
+  hrCalcAge();hrCalcTenure();renderHrCertList();
+  if(h.photo)setHrPhotoPreview(h.photo);else clearHrPhoto();
+  openMo('moHr');
+}
 async function saveHrEmployee(){
-  const name=v('hName').trim();if(!name){Swal.fire({icon:'warning',title:'Name required'});return;}
-  const payload={name,position:v('hPos').trim(),department:v('hDept').trim(),email:v('hEmail').trim(),phone:v('hPhone').trim(),bio:v('hBio').trim(),photo:_hrPhoto||''};
-  if(eHrId){const h=hrList.find(x=>x.id===eHrId);if(h){Object.assign(h,payload);await gasPost({action:'saveHr',hr:{id:eHrId,...h}});}}
-  else {const res=await gasPost({action:'saveHr',hr:{...payload,courses:[]}});const id=res?.id||Date.now();hrList.push({id:Number(id),...payload,courses:[]});}
+  const fn=v('hFirst').trim();const ln=v('hLast').trim();
+  if(!fn){Swal.fire({icon:'warning',title:'First name required'});return;}
+  const name=(fn+' '+ln).trim();
+  const eduLvl=v('hEduLvl').trim();const eduYear=v('hEduYear').trim();
+  const education=(eduLvl||eduYear)?[{level:eduLvl,year:eduYear}]:[];
+  const existing=eHrId?hrList.find(x=>x.id===eHrId):null;
+  const payload={
+    name,firstName:fn,lastName:ln,
+    position:v('hPos').trim(),department:v('hDept').trim(),
+    birthDate:v('hBirth')||'',address:v('hAddr').trim(),
+    startDate:v('hStart')||'',
+    email:v('hEmail').trim(),phone:v('hPhone').trim(),
+    bio:v('hBio').trim(),photo:_hrPhoto||'',
+    education,certFiles:_hrCertFiles,
+    workHistory:existing?.workHistory||[],
+    courses:existing?.courses||[],
+  };
+  if(eHrId){if(existing){Object.assign(existing,payload);await gasPost({action:'saveHr',hr:{id:eHrId,...existing}});}}
+  else {const res=await gasPost({action:'saveHr',hr:payload});const id=res?.id||Date.now();hrList.push({id:Number(id),...payload});}
   closeMo('moHr');refHr();Swal.fire({icon:'success',title:'Saved',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
 }
 async function delHr(id){const r=await Swal.fire({title:'Delete employee?',icon:'warning',showCancelButton:true,confirmButtonColor:'var(--rd)'});if(!r.isConfirmed)return;await gasPost({action:'deleteHr',id});hrList=hrList.filter(x=>x.id!==id);refHr();}
@@ -1633,11 +1731,120 @@ async function hrAddCourse(id){
   const r=await Swal.fire({title:'Add Course',html:`<input id="cName" class="swal2-input" placeholder="Course name"><input id="cDate" type="date" class="swal2-input">`,showCancelButton:true,preConfirm:()=>({name:(document.getElementById('cName').value||'').trim(),date:document.getElementById('cDate').value||''})});
   if(!r.isConfirmed||!r.value.name)return;
   if(!Array.isArray(h.courses))h.courses=[];
-  h.courses.push({name:r.value.name,date:r.value.date,status:'planned'});
+  h.courses.push({name:r.value.name,date:r.value.date,status:'planned',files:[]});
   await hrPersist(h);refHr();
+  const openDetail=document.getElementById('moHrDet');if(openDetail&&openDetail.classList.contains('open'))openHrDetail(id);
 }
-async function hrRemoveCourse(id,idx){const h=hrList.find(x=>x.id===id);if(!h||!h.courses)return;h.courses.splice(idx,1);await hrPersist(h);refHr();}
+async function hrRemoveCourse(id,idx){const h=hrList.find(x=>x.id===id);if(!h||!h.courses)return;h.courses.splice(idx,1);await hrPersist(h);refHr();const o=document.getElementById('moHrDet');if(o&&o.classList.contains('open'))openHrDetail(id);}
 async function hrSetCourseStatus(id,idx,st){const h=hrList.find(x=>x.id===id);if(!h||!h.courses?.[idx])return;h.courses[idx].status=st;await hrPersist(h);refHr();}
+async function hrUploadCourseFile(id,idx,inp){
+  const h=hrList.find(x=>x.id===id);if(!h||!h.courses?.[idx])return;
+  const files=Array.from(inp.files||[]);inp.value='';
+  if(!Array.isArray(h.courses[idx].files))h.courses[idx].files=[];
+  showSpin('Uploading...');
+  for(const f of files){try{const b64=await fileToB64(f);const r=await gasPost({action:'uploadFile',fileName:f.name,mimeType:f.type||'application/pdf',fileData:b64,folder:'hr'});if(r&&r.id)h.courses[idx].files.push({name:f.name,url:r.viewUrl});}catch(e){console.warn(e);}}
+  hideSpin();await hrPersist(h);openHrDetail(id);
+}
+async function hrAddWork(id){
+  const h=hrList.find(x=>x.id===id);if(!h)return;
+  const r=await Swal.fire({title:'Add Work Experience',html:`<input id="wRole" class="swal2-input" placeholder="Role / Position"><input id="wOrg" class="swal2-input" placeholder="Organization"><input id="wFrom" type="text" class="swal2-input" placeholder="From (e.g. 2560)"><input id="wTo" type="text" class="swal2-input" placeholder="To (e.g. 2565 / Present)">`,showCancelButton:true,preConfirm:()=>({role:document.getElementById('wRole').value.trim(),org:document.getElementById('wOrg').value.trim(),from:document.getElementById('wFrom').value.trim(),to:document.getElementById('wTo').value.trim()})});
+  if(!r.isConfirmed||!r.value.role)return;
+  if(!Array.isArray(h.workHistory))h.workHistory=[];
+  h.workHistory.push(r.value);
+  await hrPersist(h);openHrDetail(id);
+}
+async function hrRemoveWork(id,idx){const h=hrList.find(x=>x.id===id);if(!h?.workHistory)return;h.workHistory.splice(idx,1);await hrPersist(h);openHrDetail(id);}
+async function hrAddEducation(id){
+  const h=hrList.find(x=>x.id===id);if(!h)return;
+  const r=await Swal.fire({title:'Add Education',html:`<input id="eLvl" class="swal2-input" placeholder="Level / Degree"><input id="eInst" class="swal2-input" placeholder="Institution"><input id="eYr" class="swal2-input" placeholder="Graduation Year">`,showCancelButton:true,preConfirm:()=>({level:document.getElementById('eLvl').value.trim(),institution:document.getElementById('eInst').value.trim(),year:document.getElementById('eYr').value.trim()})});
+  if(!r.isConfirmed||!r.value.level)return;
+  if(!Array.isArray(h.education))h.education=[];
+  h.education.push(r.value);
+  await hrPersist(h);openHrDetail(id);
+}
+async function hrRemoveEducation(id,idx){const h=hrList.find(x=>x.id===id);if(!h?.education)return;h.education.splice(idx,1);await hrPersist(h);openHrDetail(id);}
+function openHrDetail(id){
+  const h=hrList.find(x=>x.id===id);if(!h)return;
+  const body=document.getElementById('hrDetBody');if(!body)return;
+  const avatar=h.photo?`<img src="${h.photo}" style="width:96px;height:96px;border-radius:50%;object-fit:cover">`:`<div style="width:96px;height:96px;border-radius:50%;background:var(--g100);color:var(--g600);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:28px">${initials(h.name)}</div>`;
+  const info=(l,v)=>`<div><div style="font-size:10.5px;color:var(--g500);text-transform:uppercase;letter-spacing:.5px">${l}</div><div style="font-size:13px;color:var(--g900);margin-top:2px">${v||'<span style="color:var(--g400)">—</span>'}</div></div>`;
+  const courses=Array.isArray(h.courses)?h.courses:[];
+  const edu=Array.isArray(h.education)?h.education:[];
+  const work=Array.isArray(h.workHistory)?h.workHistory:[];
+  const certs=Array.isArray(h.certFiles)?h.certFiles:[];
+  body.innerHTML=`
+    <div style="display:flex;gap:18px;align-items:flex-start;margin-bottom:16px">
+      ${avatar}
+      <div style="flex:1">
+        <div style="font-size:20px;font-weight:700">${escHtml(h.name)}</div>
+        <div style="color:var(--g600);font-size:13px">${escHtml(h.position||'')} ${h.department?'· '+escHtml(h.department):''}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding:12px;background:var(--g50);border-radius:var(--r);margin-bottom:14px">
+      ${info('First Name',escHtml(h.firstName||''))}
+      ${info('Last Name',escHtml(h.lastName||''))}
+      ${info('Date of Birth',h.birthDate||'')}
+      ${info('Age',_yearsBetween(h.birthDate))}
+      ${info('Phone',escHtml(h.phone||''))}
+      ${info('Email',escHtml(h.email||''))}
+      ${info('Start Date',h.startDate||'')}
+      ${info('Years of Service',_yearsBetween(h.startDate))}
+    </div>
+    <div style="margin-bottom:14px">${info('Current Address',escHtml(h.address||'').replace(/\n/g,'<br>'))}</div>
+    ${h.bio?`<div style="margin-bottom:14px">${info('Bio',escHtml(h.bio).replace(/\n/g,'<br>'))}</div>`:''}
+
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h4 style="margin:0;font-size:13px;color:var(--g700)"><i class="fas fa-graduation-cap"></i> Education History</h4>
+        <button class="btn btn-g btn-xs" onclick="hrAddEducation(${h.id})"><i class="fas fa-plus"></i> Add</button>
+      </div>
+      ${edu.length?edu.map((e,i)=>`<div style="display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--g200);border-radius:6px;margin-bottom:4px">
+        <div style="flex:1"><strong>${escHtml(e.level||'')}</strong>${e.institution?' · '+escHtml(e.institution):''}${e.year?' <span style="color:var(--g500)">('+escHtml(e.year)+')</span>':''}</div>
+        <button class="btn btn-d btn-xs" onclick="hrRemoveEducation(${h.id},${i})"><i class="fas fa-times"></i></button>
+      </div>`).join(''):'<div style="color:var(--g400);font-size:12px">No education records.</div>'}
+      ${certs.length?`<div style="margin-top:8px"><div style="font-size:10.5px;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Certificates</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${certs.map(f=>`<div class="fi2" style="cursor:pointer" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','pdf')">${ficon('pdf')}<span class="fn" style="max-width:200px">${escHtml(f.name)}</span></div>`).join('')}</div></div>`:''}
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h4 style="margin:0;font-size:13px;color:var(--g700)"><i class="fas fa-briefcase"></i> Work History</h4>
+        <button class="btn btn-g btn-xs" onclick="hrAddWork(${h.id})"><i class="fas fa-plus"></i> Add</button>
+      </div>
+      ${work.length?work.map((w,i)=>`<div style="display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--g200);border-radius:6px;margin-bottom:4px">
+        <div style="flex:1"><strong>${escHtml(w.role||'')}</strong>${w.org?' · '+escHtml(w.org):''} <span style="color:var(--g500);font-size:11.5px">${escHtml(w.from||'')}${w.to?' — '+escHtml(w.to):''}</span></div>
+        <button class="btn btn-d btn-xs" onclick="hrRemoveWork(${h.id},${i})"><i class="fas fa-times"></i></button>
+      </div>`).join(''):'<div style="color:var(--g400);font-size:12px">No work history.</div>'}
+    </div>
+
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h4 style="margin:0;font-size:13px;color:var(--g700)"><i class="fas fa-chalkboard-teacher"></i> Training Courses</h4>
+        <button class="btn btn-g btn-xs" onclick="hrAddCourse(${h.id})"><i class="fas fa-plus"></i> Add</button>
+      </div>
+      ${courses.length?courses.map((c,i)=>{
+        const badge=c.status==='passed'?'bg':c.status==='in_progress'?'bc':'bo';
+        const cf=Array.isArray(c.files)?c.files:[];
+        return `<div style="border:1px solid var(--g200);border-radius:6px;padding:8px 10px;margin-bottom:6px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="flex:1;font-size:13px"><strong>${escHtml(c.name)}</strong> <span style="color:var(--g500);font-size:11.5px">${escHtml(c.date||'')}</span></span>
+            <select onchange="hrSetCourseStatus(${h.id},${i},this.value)" style="font-size:11px;padding:2px 4px">
+              <option value="planned" ${c.status==='planned'?'selected':''}>Planned</option>
+              <option value="in_progress" ${c.status==='in_progress'?'selected':''}>In Progress</option>
+              <option value="passed" ${c.status==='passed'?'selected':''}>Passed</option>
+            </select>
+            <label class="btn btn-ol btn-xs" style="cursor:pointer;margin:0"><i class="fas fa-paperclip"></i> PDF
+              <input type="file" accept="application/pdf" multiple style="display:none" onchange="hrUploadCourseFile(${h.id},${i},this)">
+            </label>
+            <button class="btn btn-d btn-xs" onclick="hrRemoveCourse(${h.id},${i})"><i class="fas fa-times"></i></button>
+          </div>
+          ${cf.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${cf.map(f=>`<div class="fi2" style="cursor:pointer" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','pdf')">${ficon('pdf')}<span class="fn" style="max-width:180px">${escHtml(f.name)}</span></div>`).join('')}</div>`:''}
+        </div>`;
+      }).join(''):'<div style="color:var(--g400);font-size:12px">No courses yet.</div>'}
+    </div>
+  `;
+  openMo('moHrDet');
+}
 
 // Trigger Drive folder creation once per session
 (function ensureDriveFolders(){try{if(GAS_URL)fetch(`${GAS_URL}?action=ensureFolders`).catch(()=>{});}catch(_){} })();
