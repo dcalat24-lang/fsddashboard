@@ -203,7 +203,7 @@ export const Route = createFileRoute("/api/public/gas")({
           const t = supabaseAdmin.from("fsd_hr_employees" as never) as unknown as { select: (s: string) => { order: (c: string, o: { ascending: boolean }) => Promise<{ data: Array<Record<string, unknown>> | null; error: { message: string } | null }> } };
           const { data, error } = await t.select("*").order("id", { ascending: true });
           if (error) return json({ hr: [], error: error.message }, 500);
-          const hr = (data ?? []).map((r) => ({ id: Number(r.id), name: r.name, position: r.position ?? "", department: r.department ?? "", email: r.email ?? "", phone: r.phone ?? "", photo: r.photo ?? "", bio: r.bio ?? "", courses: r.courses ?? [] }));
+          const hr = (data ?? []).map((r) => ({ id: Number(r.id), name: r.name, position: r.position ?? "", department: r.department ?? "", email: r.email ?? "", phone: r.phone ?? "", photo: r.photo ?? "", bio: r.bio ?? "", courses: r.courses ?? [], firstName: r.first_name ?? "", lastName: r.last_name ?? "", birthDate: r.birth_date ?? "", address: r.address ?? "", startDate: r.start_date ?? "", education: r.education ?? [], workHistory: r.work_history ?? [], certFiles: r.cert_files ?? [] }));
           return json({ hr });
         }
         if (action === "ensureFolders") {
