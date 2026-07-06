@@ -761,7 +761,7 @@ function buildTkCards(all,tab){
       </div>
       <div class="tc-b">
         <div class="pipe" style="background:var(--g50);padding:10px;border-radius:var(--r)">${buildTL(d.status,d)}</div>
-        ${d.statusNote?`<div style="background:#FFFDE7;border:1px solid #FBC02D;border-radius:var(--r);padding:9px 13px;font-size:12.5px;margin-top:8px"><i class="fas fa-sticky-note" style="color:var(--yw);margin-right:6px"></i>${d.statusNote}</div>`:''}
+        
         ${trackNoteHistory(d)}
         <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
           <button class="btn btn-ol btn-sm" onclick="openDet(${d.id})"><i class="fas fa-eye"></i> Detail</button>
