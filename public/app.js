@@ -1733,9 +1733,9 @@ async function hrAddCourse(id){
   if(!Array.isArray(h.courses))h.courses=[];
   h.courses.push({name:r.value.name,date:r.value.date,status:'planned',files:[]});
   await hrPersist(h);refHr();
-  const openDetail=document.getElementById('moHrDet');if(openDetail&&openDetail.classList.contains('show'))openHrDetail(id);
+  const openDetail=document.getElementById('moHrDet');if(openDetail&&openDetail.classList.contains('open'))openHrDetail(id);
 }
-async function hrRemoveCourse(id,idx){const h=hrList.find(x=>x.id===id);if(!h||!h.courses)return;h.courses.splice(idx,1);await hrPersist(h);refHr();const o=document.getElementById('moHrDet');if(o&&o.classList.contains('show'))openHrDetail(id);}
+async function hrRemoveCourse(id,idx){const h=hrList.find(x=>x.id===id);if(!h||!h.courses)return;h.courses.splice(idx,1);await hrPersist(h);refHr();const o=document.getElementById('moHrDet');if(o&&o.classList.contains('open'))openHrDetail(id);}
 async function hrSetCourseStatus(id,idx,st){const h=hrList.find(x=>x.id===id);if(!h||!h.courses?.[idx])return;h.courses[idx].status=st;await hrPersist(h);refHr();}
 async function hrUploadCourseFile(id,idx,inp){
   const h=hrList.find(x=>x.id===id);if(!h||!h.courses?.[idx])return;
