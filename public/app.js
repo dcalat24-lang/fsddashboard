@@ -1469,12 +1469,13 @@ function refAoc(){
       <div class="tc-b">
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap">
           <button class="btn btn-ol btn-sm" onclick="openEditAoc(${a.id})"><i class="fas fa-edit"></i> Edit Info</button>
-          <button class="btn btn-c btn-sm" onclick="openAocDocSearch(${a.id})"><i class="fas fa-search"></i> Attach Document</button>
           <button class="btn btn-d btn-sm" onclick="delAoc(${a.id})"><i class="fas fa-trash"></i> Delete</button>
         </div>
         ${AOC_PHASES.map(p=>{
           const ph=a.phases?.[p.key]||{};
           const files=Array.isArray(ph.files)?ph.files:[];
+          const pDocIds=Array.isArray(ph.docIds)?ph.docIds:[];
+          const noteHist=Array.isArray(ph.notes)?ph.notes:[];
           return `<div style="border:1px solid var(--g200);border-left:4px solid ${p.color};border-radius:var(--r);padding:12px;margin-bottom:10px;background:#fff">
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
               <i class="fas ${p.icon}" style="color:${p.color};font-size:18px"></i>
@@ -1482,29 +1483,40 @@ function refAoc(){
               <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--g600);cursor:pointer">
                 <input type="checkbox" ${ph.done?'checked':''} onchange="aocToggleDone(${a.id},'${p.key}',this.checked)"> Completed
               </label>
-              <label class="btn btn-ol btn-sm" style="cursor:pointer;margin:0"><i class="fas fa-paperclip"></i> Attach
+              <label class="btn btn-ol btn-sm" style="cursor:pointer;margin:0"><i class="fas fa-paperclip"></i> Attach File
                 <input type="file" accept=".pdf,image/jpeg,image/jpg" multiple style="display:none" onchange="aocUploadFiles(${a.id},'${p.key}',this.files,this)">
               </label>
+              <button class="btn btn-c btn-sm" onclick="openAocDocSearch(${a.id},'${p.key}')"><i class="fas fa-search"></i> Attach Document</button>
             </div>
-            <textarea placeholder="Notes for this phase..." onchange="aocSetPhaseNote(${a.id},'${p.key}',this.value)" style="width:100%;margin-top:8px;min-height:52px;font-size:12.5px">${escHtml(ph.note||'')}</textarea>
+            <textarea id="aocPn-${a.id}-${p.key}" placeholder="Notes for this phase..." style="width:100%;margin-top:8px;min-height:52px;font-size:12.5px">${escHtml(ph.note||'')}</textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:6px">
+              <button class="btn btn-p btn-sm" onclick="aocSavePhaseNote(${a.id},'${p.key}')"><i class="fas fa-save"></i> Save Note</button>
+            </div>
             ${files.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${files.map((f,i)=>`
               <div class="fi2" style="cursor:pointer" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','${f.type||''}')">
                 ${ficon(f.type)}<span class="fn" style="max-width:150px">${escHtml(f.name)}</span>
                 <button onclick="event.stopPropagation();aocRemoveFile(${a.id},'${p.key}',${i})" style="background:none;border:none;color:var(--rd);cursor:pointer;font-size:11px"><i class="fas fa-times"></i></button>
               </div>`).join('')}</div>`:''}
+            ${pDocIds.length?`<div style="margin-top:8px">
+              <div style="font-size:10.5px;font-weight:600;color:var(--g500);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Attached Documents (${pDocIds.length})</div>
+              ${pDocIds.map(did=>{const d=DB.docs.find(x=>x.id===did);if(!d)return`<div style="font-size:12px;color:var(--g400)">Doc #${did} (not found)</div>`;
+                return `<div style="display:flex;gap:8px;align-items:center;padding:5px 8px;background:var(--g50);border-radius:6px;margin-bottom:3px">
+                  <code style="font-size:11px">${d.fsdNo}</code>
+                  <span style="flex:1;font-size:12px" class="tdl" onclick="openDet(${d.id})">${escHtml(d.subject)}</span>
+                  ${sbadge(d.status)}
+                  <button class="btn btn-d btn-xs" onclick="aocRemovePhaseDoc(${a.id},'${p.key}',${d.id})"><i class="fas fa-times"></i></button>
+                </div>`;
+              }).join('')}
+            </div>`:''}
+            ${noteHist.length?`<div style="margin-top:8px;background:var(--g50);padding:8px;border-radius:6px">
+              <div style="font-size:10.5px;font-weight:600;color:var(--g500);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-history"></i> Note History (${noteHist.length})</div>
+              ${[...noteHist].reverse().map(n=>`<div style="padding:6px 8px;background:#fff;border-left:3px solid ${p.color};border-radius:4px;margin-bottom:4px">
+                <div style="font-size:12px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${escHtml(n.text||'')}</div>
+                <div style="font-size:10px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}${n.by?' · '+escHtml(n.by):''}</div>
+              </div>`).join('')}
+            </div>`:''}
           </div>`;
         }).join('')}
-        ${(a.docIds||[]).length?`<div style="margin-top:10px">
-          <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Attached Documents (${a.docIds.length})</div>
-          ${a.docIds.map(did=>{const d=DB.docs.find(x=>x.id===did);if(!d)return`<div style="font-size:12px;color:var(--g400)">Doc #${did} (not found)</div>`;
-            return `<div style="display:flex;gap:8px;align-items:center;padding:6px 10px;background:var(--g50);border-radius:6px;margin-bottom:4px">
-              <code style="font-size:11px">${d.fsdNo}</code>
-              <span style="flex:1;font-size:12.5px" class="tdl" onclick="openDet(${d.id})">${escHtml(d.subject)}</span>
-              ${sbadge(d.status)}
-              <button class="btn btn-d btn-xs" onclick="aocRemoveDoc(${a.id},${d.id})"><i class="fas fa-times"></i></button>
-            </div>`;
-          }).join('')}
-        </div>`:''}
       </div>
     </div>`;
   }).join('');
