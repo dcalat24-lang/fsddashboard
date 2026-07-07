@@ -1838,11 +1838,21 @@ function openHrDetail(id){
   const work=Array.isArray(h.workHistory)?h.workHistory:[];
   const certs=Array.isArray(h.certFiles)?h.certFiles:[];
   body.innerHTML=`
-    <div style="display:flex;gap:18px;align-items:flex-start;margin-bottom:16px">
+    <div style="display:flex;gap:18px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap">
       ${avatar}
-      <div style="flex:1">
-        <div style="font-size:20px;font-weight:700">${escHtml(h.name)}</div>
-        <div style="color:var(--g600);font-size:13px">${escHtml(h.position||'')} ${h.department?'· '+escHtml(h.department):''}</div>
+      <div style="flex:1;min-width:260px">
+        <div style="font-size:24px;font-weight:700">${escHtml(h.name)}</div>
+        <div style="color:var(--g600);font-size:14px;margin-top:2px">${escHtml(h.position||'')} ${h.department?'· '+escHtml(h.department):''}</div>
+        <div style="color:var(--g500);font-size:12.5px;margin-top:4px">Employee ID: ${escHtml(h.employeeId||'—')}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <span class="badge ${h.status==='active'?'bg':'bo'}">${(h.status||'active').toUpperCase()}</span>
+          <span class="badge ${h.empType==='contract'?'bo':'bg'}">${h.empType==='contract'?'Contract':'Government'}</span>
+          ${h.branch?`<span class="badge bc"><i class="fas fa-building"></i> ${escHtml(h.branch)}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-p btn-sm" onclick="openEditHr(${h.id})"><i class="fas fa-edit"></i> Edit Info</button>
+        <button class="btn btn-d btn-sm" onclick="delHr(${h.id})"><i class="fas fa-trash"></i></button>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding:12px;background:var(--g50);border-radius:var(--r);margin-bottom:14px">
