@@ -326,3 +326,15 @@ td.lnk .ci { color:var(--p); text-decoration:underline; cursor:pointer }
   .sg { grid-template-columns:1fr }
   .lcard { padding:32px 22px }
 }
+
+/* Sheet fullscreen viewer */
+.sheet-fullscreen{
+  display:flex;flex-direction:column;
+  position:fixed;inset:0;
+  top:56px;left:var(--sidebar-w,240px);right:0;bottom:0;
+  height:auto;width:auto;
+  margin:0;border-radius:0;box-shadow:none;border:none;z-index:5;
+}
+@media(max-width:768px){
+  .sheet-fullscreen{left:0;top:56px}
+}
