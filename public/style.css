@@ -327,14 +327,15 @@ td.lnk .ci { color:var(--p); text-decoration:underline; cursor:pointer }
   .lcard { padding:32px 22px }
 }
 
-/* Sheet fullscreen viewer */
+/* Sheet fullscreen viewer — always fills viewport minus sidebar + topbar */
 .sheet-fullscreen{
   display:flex;flex-direction:column;
-  position:fixed;inset:0;
-  top:56px;left:var(--sidebar-w,240px);right:0;bottom:0;
+  position:fixed;
+  top:var(--th,64px);left:var(--sw,268px);right:0;bottom:0;
   height:auto;width:auto;
   margin:0;border-radius:0;box-shadow:none;border:none;z-index:5;
 }
-@media(max-width:768px){
-  .sheet-fullscreen{left:0;top:56px}
+.sidebar.collapsed ~ .main .sheet-fullscreen{left:0}
+@media(max-width:900px){
+  .sheet-fullscreen{left:0}
 }
