@@ -1729,7 +1729,9 @@ async function onHrCert(e){
 function openAddHr(){
   eHrId=null;_hrCertFiles=[];
   document.getElementById('moHrT').textContent='Add Employee';
-  ['hFirst','hLast','hPos','hDept','hBirth','hAge','hPhone','hEmail','hAddr','hStart','hTenure','hEduLvl','hEduYear','hBio','hName'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['hFirst','hLast','hPos','hDept','hBirth','hAge','hPhone','hEmail','hAddr','hStart','hTenure','hEduLvl','hEduYear','hBio','hName','hEmpId','hBranch'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const et=document.getElementById('hEmpType');if(et)et.value='gov';
+  const st=document.getElementById('hStatus');if(st)st.value='active';
   clearHrPhoto();renderHrCertList();openMo('moHr');
 }
 function openEditHr(id){
@@ -1752,6 +1754,10 @@ function openEditHr(id){
   document.getElementById('hEduYear').value=edu.year||'';
   document.getElementById('hBio').value=h.bio||'';
   document.getElementById('hName').value=h.name||'';
+  const et=document.getElementById('hEmpType');if(et)et.value=h.empType||'gov';
+  const eid=document.getElementById('hEmpId');if(eid)eid.value=h.employeeId||'';
+  const br=document.getElementById('hBranch');if(br)br.value=h.branch||'';
+  const st=document.getElementById('hStatus');if(st)st.value=h.status||'active';
   _hrCertFiles=Array.isArray(h.certFiles)?[...h.certFiles]:[];
   hrCalcAge();hrCalcTenure();renderHrCertList();
   if(h.photo)setHrPhotoPreview(h.photo);else clearHrPhoto();
@@ -1774,6 +1780,10 @@ async function saveHrEmployee(){
     education,certFiles:_hrCertFiles,
     workHistory:existing?.workHistory||[],
     courses:existing?.courses||[],
+    empType:v('hEmpType')||'gov',
+    employeeId:v('hEmpId').trim(),
+    branch:v('hBranch').trim(),
+    status:v('hStatus')||'active',
   };
   if(eHrId){if(existing){Object.assign(existing,payload);await gasPost({action:'saveHr',hr:{id:eHrId,...existing}});}}
   else {const res=await gasPost({action:'saveHr',hr:payload});const id=res?.id||Date.now();hrList.push({id:Number(id),...payload});}
