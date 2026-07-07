@@ -360,6 +360,10 @@ export const Route = createFileRoute("/api/public/gas")({
             education: h.education ?? [],
             work_history: h.workHistory ?? [],
             cert_files: h.certFiles ?? [],
+            emp_type: h.empType ? String(h.empType) : "gov",
+            employee_id: h.employeeId == null ? null : String(h.employeeId),
+            branch: h.branch == null ? null : String(h.branch),
+            status: h.status ? String(h.status) : "active",
           };
           const t = supabaseAdmin.from("fsd_hr_employees" as never) as unknown as {
             update: (v: Record<string, unknown>) => { eq: (c: string, v: unknown) => { select: () => { maybeSingle: () => Promise<{ data: { id: number } | null; error: { message: string } | null }> } } };
