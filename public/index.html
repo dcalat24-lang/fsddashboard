@@ -401,8 +401,26 @@
         <div class="ff"><label>Last Name</label><input id="hLast" placeholder="Last name"></div>
       </div>
       <div class="fr c2">
+        <div class="ff"><label>Employee Type *</label>
+          <select id="hEmpType" style="width:100%;padding:8px;border:1px solid var(--g200);border-radius:6px">
+            <option value="gov">เจ้าหน้าที่รัฐ (Government)</option>
+            <option value="contract">เจ้าหน้าที่ตามสัญญา (Contract)</option>
+          </select>
+        </div>
+        <div class="ff"><label>Employee ID</label><input id="hEmpId" placeholder="e.g. 0024"></div>
+      </div>
+      <div class="fr c2">
         <div class="ff"><label>Position</label><input id="hPos" placeholder="e.g. Inspector"></div>
-        <div class="ff"><label>Department</label><input id="hDept" placeholder="Department"></div>
+        <div class="ff"><label>Department</label><input id="hDept" placeholder="Administration / PEL / OPS / AIR"></div>
+      </div>
+      <div class="fr c2">
+        <div class="ff"><label>Branch</label><input id="hBranch" placeholder="e.g. Bokeo"></div>
+        <div class="ff"><label>Status</label>
+          <select id="hStatus" style="width:100%;padding:8px;border:1px solid var(--g200);border-radius:6px">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
       </div>
       <div class="fr c2">
         <div class="ff"><label>Date of Birth</label><input id="hBirth" type="date" onchange="hrCalcAge()"></div>
