@@ -1292,7 +1292,7 @@ function renderSheetPage(s,el){
   // Google Sheets embed already streams changes from Google — no need to
   // forcibly reload the iframe (that causes a visible flicker).
   if(shTimers[s.id])clearInterval(shTimers[s.id]);
-  el.innerHTML=`<div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 56px);margin:-28px;border-radius:0;box-shadow:none;border:none"><div class="ch">
+  el.innerHTML=`<div class="card sheet-fullscreen"><div class="ch">
     <h3><i class="fas fa-table" style="color:var(--gn)"></i> ${s.name}</h3>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span style="font-size:11px;color:var(--g400)">Live · Updated <strong id="sht-${s.id}">${new Date(s.lastFetch||Date.now()).toLocaleTimeString()}</strong></span>
@@ -1301,7 +1301,7 @@ function renderSheetPage(s,el){
       ${CU&&CU.role==='admin'?`<button class="btn btn-d btn-sm" onclick="rmSheet(${s.id})"><i class="fas fa-trash"></i> Remove</button>`:''}
     </div>
   </div>
-  <div class="cb" style="flex:1;padding:0;overflow:hidden">
+  <div class="cb" style="flex:1;padding:0;overflow:hidden;min-height:0">
     <iframe id="shf-${s.id}" src="${s.embedUrl}" style="width:100%;height:100%;border:none;display:block" allow="clipboard-write"></iframe>
   </div></div>`;
 }
@@ -1599,54 +1599,109 @@ let hrList=[], eHrId=null, _hrPhoto='';
 async function loadHr(){if(!GAS_URL)return;try{const r=await fetch(`${GAS_URL}?action=getHr`);const j=await r.json();if(Array.isArray(j.hr))hrList=j.hr;}catch(e){console.warn('hr load',e);}}
 function renderHr(el){
   el.innerHTML=`<div class="card"><div class="ch">
-    <h3><i class="fas fa-id-badge" style="color:var(--p)"></i> HR Management</h3>
+    <h3><i class="fas fa-id-badge" style="color:var(--p)"></i> HR Management Dashboard</h3>
     <button class="btn btn-p btn-sm" onclick="openAddHr()"><i class="fas fa-user-plus"></i> Add Employee</button>
   </div><div class="cb" id="hrBody"></div></div>`;
   loadHr().then(()=>refHr());
 }
+let _hrListOpen=false;
+function toggleHrList(){_hrListOpen=!_hrListOpen;refHr();}
+function _empDeptGroup(h){
+  const p=((h.position||'')+' '+(h.department||'')).toUpperCase();
+  if(/PEL/.test(p))return 'PEL';
+  if(/OPS|OPERATION/.test(p))return 'OPS';
+  if(/AIR|AIRWORTH/.test(p))return 'AIR';
+  return 'OTHER';
+}
+function _isHead(h){return /HEAD|CHIEF|DIRECTOR/i.test(h.position||'')&&!/DEPUTY|VICE|ACTING/i.test(h.position||'');}
+function _isDeputy(h){return /DEPUTY|VICE|ACTING HEAD/i.test(h.position||'');}
 function refHr(){
   const body=document.getElementById('hrBody');if(!body)return;
-  if(!hrList.length){body.innerHTML=`<div class="empty"><i class="fas fa-users"></i><p>No employees yet.</p></div>`;return;}
-  body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">${hrList.map(h=>{
-    const avatar=h.photo?`<img src="${h.photo}" style="width:64px;height:64px;border-radius:50%;object-fit:cover">`:`<div style="width:64px;height:64px;border-radius:50%;background:var(--g100);color:var(--g600);display:flex;align-items:center;justify-content:center;font-weight:600">${initials(h.name)}</div>`;
-    const courses=Array.isArray(h.courses)?h.courses:[];
-    const passed=courses.filter(c=>c.status==='passed').length;
-    return `<div style="border:1px solid var(--g200);border-radius:var(--r);padding:14px;background:#fff">
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        ${avatar}
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:14px">${escHtml(h.name)}</div>
-          <div style="font-size:12px;color:var(--g600)">${escHtml(h.position||'')} ${h.department?'· '+escHtml(h.department):''}</div>
-          <div style="font-size:11.5px;color:var(--g500);margin-top:4px">${h.email?`<i class="fas fa-envelope"></i> ${escHtml(h.email)}`:''} ${h.phone?`<br><i class="fas fa-phone"></i> ${escHtml(h.phone)}`:''}</div>
+  const total=hrList.length;
+  const gov=hrList.filter(h=>(h.empType||'gov')==='gov').length;
+  const con=hrList.filter(h=>h.empType==='contract').length;
+  const listRows=hrList.map(h=>{
+    const av=h.photo?`<img src="${h.photo}" style="width:36px;height:36px;border-radius:50%;object-fit:cover">`:`<div style="width:36px;height:36px;border-radius:50%;background:var(--g100);color:var(--g600);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">${initials(h.name)}</div>`;
+    const typeBadge=h.empType==='contract'?'<span class="badge bo" style="font-size:10px">Contract</span>':'<span class="badge bg" style="font-size:10px">Gov</span>';
+    return `<div onclick="openHrDetail(${h.id})" style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--g50)'" onmouseout="this.style.background=''">
+      ${av}
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px">${escHtml(h.name)}</div>
+        <div style="font-size:11.5px;color:var(--g500)">${escHtml(h.position||'')}${h.department?' · '+escHtml(h.department):''}</div>
+      </div>
+      ${typeBadge}
+      <i class="fas fa-chevron-right" style="color:var(--g400);font-size:11px"></i>
+    </div>`;
+  }).join('');
+
+  // groups for org structure
+  const heads=hrList.filter(_isHead);
+  const deputies=hrList.filter(_isDeputy);
+  const pel=hrList.filter(h=>_empDeptGroup(h)==='PEL'&&!_isHead(h)&&!_isDeputy(h));
+  const ops=hrList.filter(h=>_empDeptGroup(h)==='OPS'&&!_isHead(h)&&!_isDeputy(h));
+  const air=hrList.filter(h=>_empDeptGroup(h)==='AIR'&&!_isHead(h)&&!_isDeputy(h));
+
+  const nodeSm=(h)=>{const av=h.photo?`<img src="${h.photo}" style="width:34px;height:34px;border-radius:50%;object-fit:cover">`:`<div style="width:34px;height:34px;border-radius:50%;background:var(--g100);color:var(--g600);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">${initials(h.name)}</div>`;
+    return `<div onclick="openHrDetail(${h.id})" style="display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--g200);border-radius:6px;background:#fff;cursor:pointer;margin-bottom:4px">${av}<div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:600;line-height:1.15">${escHtml(h.name)}</div><div style="font-size:10.5px;color:var(--g500);line-height:1.15">${escHtml(h.position||'')}</div></div></div>`;};
+  const nodeLg=(h)=>{const av=h.photo?`<img src="${h.photo}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--p)">`:`<div style="width:72px;height:72px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;border:3px solid var(--p)">${initials(h.name)}</div>`;
+    return `<div onclick="openHrDetail(${h.id})" style="text-align:center;cursor:pointer;padding:10px;border:2px solid var(--p);border-radius:10px;background:linear-gradient(135deg,#fff,#f0f7ff)">${av}<div style="font-size:14px;font-weight:700;margin-top:8px">${escHtml(h.name)}</div><div style="font-size:11.5px;color:var(--g600)">${escHtml(h.position||'')}</div></div>`;};
+
+  body.innerHTML=`
+    <!-- Stat Boxes -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px">
+      <div onclick="toggleHrList()" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(59,130,246,.25)">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">Total Employees</div>
+          <div style="font-size:36px;font-weight:800;line-height:1">${total}</div></div>
+          <i class="fas fa-users" style="font-size:34px;opacity:.4"></i>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <button class="btn btn-p btn-sm btn-ico" title="View" onclick="openHrDetail(${h.id})"><i class="fas fa-eye"></i></button>
-          <button class="btn btn-ol btn-sm btn-ico" onclick="openEditHr(${h.id})"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-d btn-sm btn-ico" onclick="delHr(${h.id})"><i class="fas fa-trash"></i></button>
+        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-${_hrListOpen?'chevron-up':'chevron-down'}"></i> ${_hrListOpen?'Hide':'Show'} list</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(16,185,129,.25)">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">เจ้าหน้าที่รัฐ</div>
+          <div style="font-size:36px;font-weight:800;line-height:1">${gov}</div><div style="font-size:11px;opacity:.85;margin-top:4px">Government Officials</div></div>
+          <i class="fas fa-user-tie" style="font-size:34px;opacity:.4"></i>
         </div>
       </div>
-      ${h.bio?`<div style="font-size:12px;color:var(--g700);margin-top:8px;padding:8px;background:var(--g50);border-radius:6px">${escHtml(h.bio)}</div>`:''}
-      <div style="margin-top:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <div style="font-size:11px;font-weight:600;color:var(--g500);text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-graduation-cap"></i> Training (${passed}/${courses.length} passed)</div>
-          <button class="btn btn-g btn-xs" onclick="hrAddCourse(${h.id})"><i class="fas fa-plus"></i> Course</button>
+      <div style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(245,158,11,.25)">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">เจ้าหน้าที่ตามสัญญา</div>
+          <div style="font-size:36px;font-weight:800;line-height:1">${con}</div><div style="font-size:11px;opacity:.85;margin-top:4px">Contract Staff</div></div>
+          <i class="fas fa-file-signature" style="font-size:34px;opacity:.4"></i>
         </div>
-        ${courses.length?courses.map((c,i)=>{
-          const badge=c.status==='passed'?'bg':c.status==='in_progress'?'bc':'bo';
-          return `<div style="display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--g200);border-radius:6px;margin-bottom:4px">
-            <span style="flex:1;font-size:12.5px">${escHtml(c.name)}</span>
-            <select onchange="hrSetCourseStatus(${h.id},${i},this.value)" style="font-size:11px;padding:2px 4px">
-              <option value="planned" ${c.status==='planned'?'selected':''}>Planned</option>
-              <option value="in_progress" ${c.status==='in_progress'?'selected':''}>In Progress</option>
-              <option value="passed" ${c.status==='passed'?'selected':''}>Passed</option>
-            </select>
-            <span class="badge ${badge}" style="font-size:10px">${c.date||''}</span>
-            <button class="btn btn-d btn-xs" onclick="hrRemoveCourse(${h.id},${i})"><i class="fas fa-times"></i></button>
-          </div>`;
-        }).join(''):`<div style="font-size:11.5px;color:var(--g400);padding:6px">No courses yet.</div>`}
+      </div>
+    </div>
+
+    ${_hrListOpen?`<div style="border:1px solid var(--g200);border-radius:10px;background:#fff;margin-bottom:16px;max-height:360px;overflow:auto">
+      <div style="padding:10px 12px;font-weight:600;font-size:12px;color:var(--g600);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--g100);background:var(--g50)">All Employees (click to view)</div>
+      ${listRows||'<div class="empty" style="padding:20px"><i class="fas fa-users"></i><p>No employees yet.</p></div>'}
+    </div>`:''}
+
+    <!-- Chart + Org Structure -->
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:16px" id="hrGridWrap">
+      <div style="border:1px solid var(--g200);border-radius:10px;background:#fff;padding:16px">
+        <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--g700)"><i class="fas fa-chart-bar" style="color:var(--p)"></i> Employee Overview</h4>
+        <div style="position:relative;height:340px"><canvas id="hrChart"></canvas></div>
+      </div>
+      <div style="border:1px solid var(--g200);border-radius:10px;background:#fff;padding:16px;max-height:520px;overflow:auto">
+        <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--g700)"><i class="fas fa-sitemap" style="color:var(--p)"></i> Department Structure</h4>
+        ${heads.length?`<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px">${heads.map(nodeLg).join('')}</div>`:'<div style="color:var(--g400);font-size:12px;margin-bottom:12px">No Head assigned</div>'}
+        <div style="font-size:11px;color:var(--g500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px"><i class="fas fa-user-shield"></i> Deputies (${deputies.length})</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:12px">${deputies.length?deputies.slice(0,4).map(nodeSm).join(''):'<div style="color:var(--g400);font-size:12px;grid-column:1/-1">None</div>'}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div><div style="text-align:center;background:#dbeafe;color:#1e40af;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">PEL (${pel.length})</div>${pel.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
+          <div><div style="text-align:center;background:#dcfce7;color:#166534;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">OPS (${ops.length})</div>${ops.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
+          <div><div style="text-align:center;background:#fef3c7;color:#92400e;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">AIR (${air.length})</div>${air.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
+        </div>
       </div>
     </div>`;
-  }).join('')}</div>`;
+  // Draw chart
+  setTimeout(()=>{
+    const cv=document.getElementById('hrChart');if(!cv||typeof Chart==='undefined')return;
+    if(window._hrChart)window._hrChart.destroy();
+    window._hrChart=new Chart(cv.getContext('2d'),{type:'bar',data:{labels:['Total','เจ้าหน้าที่รัฐ','เจ้าหน้าที่ตามสัญญา','PEL','OPS','AIR'],datasets:[{label:'Employees',data:[total,gov,con,pel.length+hrList.filter(h=>_empDeptGroup(h)==='PEL'&&(_isHead(h)||_isDeputy(h))).length,ops.length+hrList.filter(h=>_empDeptGroup(h)==='OPS'&&(_isHead(h)||_isDeputy(h))).length,air.length+hrList.filter(h=>_empDeptGroup(h)==='AIR'&&(_isHead(h)||_isDeputy(h))).length],backgroundColor:['#3b82f6','#10b981','#f59e0b','#6366f1','#22c55e','#eab308'],borderRadius:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,font:{family:'Kanit'}}},x:{ticks:{font:{family:'Kanit',size:11}}}}}});
+  },50);
 }
 function clearHrPhoto(){_hrPhoto='';const p=document.getElementById('hPhoto');if(p)p.value='';const r=document.getElementById('hPhotoRow');if(r)r.style.display='none';}
 function setHrPhotoPreview(d){_hrPhoto=d||'';const row=document.getElementById('hPhotoRow');if(!d){if(row)row.style.display='none';return;}document.getElementById('hPhotoPrev').src=d;row.style.display='';}
@@ -1674,7 +1729,9 @@ async function onHrCert(e){
 function openAddHr(){
   eHrId=null;_hrCertFiles=[];
   document.getElementById('moHrT').textContent='Add Employee';
-  ['hFirst','hLast','hPos','hDept','hBirth','hAge','hPhone','hEmail','hAddr','hStart','hTenure','hEduLvl','hEduYear','hBio','hName'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['hFirst','hLast','hPos','hDept','hBirth','hAge','hPhone','hEmail','hAddr','hStart','hTenure','hEduLvl','hEduYear','hBio','hName','hEmpId','hBranch'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const et=document.getElementById('hEmpType');if(et)et.value='gov';
+  const st=document.getElementById('hStatus');if(st)st.value='active';
   clearHrPhoto();renderHrCertList();openMo('moHr');
 }
 function openEditHr(id){
@@ -1697,6 +1754,10 @@ function openEditHr(id){
   document.getElementById('hEduYear').value=edu.year||'';
   document.getElementById('hBio').value=h.bio||'';
   document.getElementById('hName').value=h.name||'';
+  const et=document.getElementById('hEmpType');if(et)et.value=h.empType||'gov';
+  const eid=document.getElementById('hEmpId');if(eid)eid.value=h.employeeId||'';
+  const br=document.getElementById('hBranch');if(br)br.value=h.branch||'';
+  const st=document.getElementById('hStatus');if(st)st.value=h.status||'active';
   _hrCertFiles=Array.isArray(h.certFiles)?[...h.certFiles]:[];
   hrCalcAge();hrCalcTenure();renderHrCertList();
   if(h.photo)setHrPhotoPreview(h.photo);else clearHrPhoto();
@@ -1719,6 +1780,10 @@ async function saveHrEmployee(){
     education,certFiles:_hrCertFiles,
     workHistory:existing?.workHistory||[],
     courses:existing?.courses||[],
+    empType:v('hEmpType')||'gov',
+    employeeId:v('hEmpId').trim(),
+    branch:v('hBranch').trim(),
+    status:v('hStatus')||'active',
   };
   if(eHrId){if(existing){Object.assign(existing,payload);await gasPost({action:'saveHr',hr:{id:eHrId,...existing}});}}
   else {const res=await gasPost({action:'saveHr',hr:payload});const id=res?.id||Date.now();hrList.push({id:Number(id),...payload});}
@@ -1773,11 +1838,21 @@ function openHrDetail(id){
   const work=Array.isArray(h.workHistory)?h.workHistory:[];
   const certs=Array.isArray(h.certFiles)?h.certFiles:[];
   body.innerHTML=`
-    <div style="display:flex;gap:18px;align-items:flex-start;margin-bottom:16px">
+    <div style="display:flex;gap:18px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap">
       ${avatar}
-      <div style="flex:1">
-        <div style="font-size:20px;font-weight:700">${escHtml(h.name)}</div>
-        <div style="color:var(--g600);font-size:13px">${escHtml(h.position||'')} ${h.department?'· '+escHtml(h.department):''}</div>
+      <div style="flex:1;min-width:260px">
+        <div style="font-size:24px;font-weight:700">${escHtml(h.name)}</div>
+        <div style="color:var(--g600);font-size:14px;margin-top:2px">${escHtml(h.position||'')} ${h.department?'· '+escHtml(h.department):''}</div>
+        <div style="color:var(--g500);font-size:12.5px;margin-top:4px">Employee ID: ${escHtml(h.employeeId||'—')}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <span class="badge ${h.status==='active'?'bg':'bo'}">${(h.status||'active').toUpperCase()}</span>
+          <span class="badge ${h.empType==='contract'?'bo':'bg'}">${h.empType==='contract'?'Contract':'Government'}</span>
+          ${h.branch?`<span class="badge bc"><i class="fas fa-building"></i> ${escHtml(h.branch)}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-p btn-sm" onclick="openEditHr(${h.id})"><i class="fas fa-edit"></i> Edit Info</button>
+        <button class="btn btn-d btn-sm" onclick="delHr(${h.id})"><i class="fas fa-trash"></i></button>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding:12px;background:var(--g50);border-radius:var(--r);margin-bottom:14px">

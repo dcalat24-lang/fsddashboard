@@ -118,12 +118,15 @@ export type Database = {
           address: string | null
           bio: string | null
           birth_date: string | null
+          branch: string | null
           cert_files: Json
           courses: Json
           created_at: string
           department: string | null
           education: Json
           email: string | null
+          emp_type: string
+          employee_id: string | null
           first_name: string | null
           id: number
           last_name: string | null
@@ -132,6 +135,7 @@ export type Database = {
           photo: string | null
           position: string | null
           start_date: string | null
+          status: string
           updated_at: string
           work_history: Json
         }
@@ -139,12 +143,15 @@ export type Database = {
           address?: string | null
           bio?: string | null
           birth_date?: string | null
+          branch?: string | null
           cert_files?: Json
           courses?: Json
           created_at?: string
           department?: string | null
           education?: Json
           email?: string | null
+          emp_type?: string
+          employee_id?: string | null
           first_name?: string | null
           id?: number
           last_name?: string | null
@@ -153,6 +160,7 @@ export type Database = {
           photo?: string | null
           position?: string | null
           start_date?: string | null
+          status?: string
           updated_at?: string
           work_history?: Json
         }
@@ -160,12 +168,15 @@ export type Database = {
           address?: string | null
           bio?: string | null
           birth_date?: string | null
+          branch?: string | null
           cert_files?: Json
           courses?: Json
           created_at?: string
           department?: string | null
           education?: Json
           email?: string | null
+          emp_type?: string
+          employee_id?: string | null
           first_name?: string | null
           id?: number
           last_name?: string | null
@@ -174,6 +185,7 @@ export type Database = {
           photo?: string | null
           position?: string | null
           start_date?: string | null
+          status?: string
           updated_at?: string
           work_history?: Json
         }

@@ -401,8 +401,26 @@
         <div class="ff"><label>Last Name</label><input id="hLast" placeholder="Last name"></div>
       </div>
       <div class="fr c2">
+        <div class="ff"><label>Employee Type *</label>
+          <select id="hEmpType" style="width:100%;padding:8px;border:1px solid var(--g200);border-radius:6px">
+            <option value="gov">เจ้าหน้าที่รัฐ (Government)</option>
+            <option value="contract">เจ้าหน้าที่ตามสัญญา (Contract)</option>
+          </select>
+        </div>
+        <div class="ff"><label>Employee ID</label><input id="hEmpId" placeholder="e.g. 0024"></div>
+      </div>
+      <div class="fr c2">
         <div class="ff"><label>Position</label><input id="hPos" placeholder="e.g. Inspector"></div>
-        <div class="ff"><label>Department</label><input id="hDept" placeholder="Department"></div>
+        <div class="ff"><label>Department</label><input id="hDept" placeholder="Administration / PEL / OPS / AIR"></div>
+      </div>
+      <div class="fr c2">
+        <div class="ff"><label>Branch</label><input id="hBranch" placeholder="e.g. Bokeo"></div>
+        <div class="ff"><label>Status</label>
+          <select id="hStatus" style="width:100%;padding:8px;border:1px solid var(--g200);border-radius:6px">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
       </div>
       <div class="fr c2">
         <div class="ff"><label>Date of Birth</label><input id="hBirth" type="date" onchange="hrCalcAge()"></div>
@@ -442,14 +460,14 @@
   </div>
 </div>
 
-<!-- HR Detail Modal -->
+<!-- HR Detail Modal (fullscreen) -->
 <div class="mo" id="moHrDet">
-  <div class="md" style="max-width:900px">
+  <div class="md" style="max-width:100vw;width:100vw;height:100vh;max-height:100vh;border-radius:0;display:flex;flex-direction:column">
     <div class="mh">
       <h3><i class="fas fa-user" style="color:var(--p)"></i> Employee Details</h3>
       <button class="mc" onclick="closeMo('moHrDet')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="mb" id="hrDetBody"></div>
+    <div class="mb" id="hrDetBody" style="flex:1;overflow:auto"></div>
     <div class="mf"><button class="btn btn-ol" onclick="closeMo('moHrDet')">Close</button></div>
   </div>
 </div>
