@@ -1451,75 +1451,85 @@ function renderAoc(el){
 function refAoc(){
   const body=document.getElementById('aocBody');if(!body)return;
   if(!aocList.length){body.innerHTML=`<div class="empty"><i class="fas fa-plane-departure"></i><p>No companies yet — click "Add Company" to start.</p></div>`;return;}
-  body.innerHTML=aocList.map(a=>{
+  body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">`+aocList.map(a=>{
     const done=AOC_PHASES.filter(p=>a.phases?.[p.key]?.done).length;
     const pct=Math.round(done/AOC_PHASES.length*100);
-    return `<div class="tc" style="margin-bottom:12px">
-      <div class="tc-h" onclick="tkTog(this)">
-        <div style="min-width:0;flex:1">
-          <div class="tc-dn">${escHtml(a.name)}</div>
-          <div class="tc-ds">${escHtml(a.operator||'')} ${a.contact?'· '+escHtml(a.contact):''}</div>
-          <div style="background:var(--g100);border-radius:10px;height:6px;margin-top:6px;overflow:hidden;max-width:280px"><div style="background:var(--gn);height:100%;width:${pct}%"></div></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <span class="badge bp">${done}/${AOC_PHASES.length} phases</span>
-          <i class="fas fa-chevron-down" style="color:var(--g400);font-size:11px;transition:.2s"></i>
-        </div>
+    return `<div style="border:1px solid var(--g200);border-radius:12px;padding:16px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.05);display:flex;flex-direction:column;gap:10px">
+      <div style="cursor:pointer" onclick="openAocWindow(${a.id})">
+        <div style="font-size:15px;font-weight:700;color:var(--g900)"><i class="fas fa-plane-departure" style="color:var(--p);margin-right:6px"></i>${escHtml(a.name)}</div>
+        <div style="font-size:12px;color:var(--g500);margin-top:2px">${escHtml(a.operator||'')} ${a.contact?'· '+escHtml(a.contact):''}</div>
       </div>
-      <div class="tc-b">
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap">
-          <button class="btn btn-ol btn-sm" onclick="openEditAoc(${a.id})"><i class="fas fa-edit"></i> Edit Info</button>
-          <button class="btn btn-d btn-sm" onclick="delAoc(${a.id})"><i class="fas fa-trash"></i> Delete</button>
-        </div>
-        ${AOC_PHASES.map(p=>{
-          const ph=a.phases?.[p.key]||{};
-          const files=Array.isArray(ph.files)?ph.files:[];
-          const pDocIds=Array.isArray(ph.docIds)?ph.docIds:[];
-          const noteHist=Array.isArray(ph.notes)?ph.notes:[];
-          return `<div style="border:1px solid var(--g200);border-left:4px solid ${p.color};border-radius:var(--r);padding:12px;margin-bottom:10px;background:#fff">
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <i class="fas ${p.icon}" style="color:${p.color};font-size:18px"></i>
-              <strong style="flex:1;font-size:13px">${p.label}</strong>
-              <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--g600);cursor:pointer">
-                <input type="checkbox" ${ph.done?'checked':''} onchange="aocToggleDone(${a.id},'${p.key}',this.checked)"> Completed
-              </label>
-              <label class="btn btn-ol btn-sm" style="cursor:pointer;margin:0"><i class="fas fa-paperclip"></i> Attach File
-                <input type="file" accept=".pdf,image/jpeg,image/jpg" multiple style="display:none" onchange="aocUploadFiles(${a.id},'${p.key}',this.files,this)">
-              </label>
-              <button class="btn btn-c btn-sm" onclick="openAocDocSearch(${a.id},'${p.key}')"><i class="fas fa-search"></i> Attach Document</button>
-            </div>
-            <textarea id="aocPn-${a.id}-${p.key}" placeholder="Notes for this phase..." style="width:100%;margin-top:8px;min-height:52px;font-size:12.5px">${escHtml(ph.note||'')}</textarea>
-            <div style="display:flex;justify-content:flex-end;margin-top:6px">
-              <button class="btn btn-p btn-sm" onclick="aocSavePhaseNote(${a.id},'${p.key}')"><i class="fas fa-save"></i> Save Note</button>
-            </div>
-            ${files.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${files.map((f,i)=>`
-              <div class="fi2" style="cursor:pointer" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','${f.type||''}')">
-                ${ficon(f.type)}<span class="fn" style="max-width:150px">${escHtml(f.name)}</span>
-                <button onclick="event.stopPropagation();aocRemoveFile(${a.id},'${p.key}',${i})" style="background:none;border:none;color:var(--rd);cursor:pointer;font-size:11px"><i class="fas fa-times"></i></button>
-              </div>`).join('')}</div>`:''}
-            ${pDocIds.length?`<div style="margin-top:8px">
-              <div style="font-size:10.5px;font-weight:600;color:var(--g500);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Attached Documents (${pDocIds.length})</div>
-              ${pDocIds.map(did=>{const d=DB.docs.find(x=>x.id===did);if(!d)return`<div style="font-size:12px;color:var(--g400)">Doc #${did} (not found)</div>`;
-                return `<div style="display:flex;gap:8px;align-items:center;padding:5px 8px;background:var(--g50);border-radius:6px;margin-bottom:3px">
-                  <code style="font-size:11px">${d.fsdNo}</code>
-                  <span style="flex:1;font-size:12px" class="tdl" onclick="openDet(${d.id})">${escHtml(d.subject)}</span>
-                  ${sbadge(d.status)}
-                  <button class="btn btn-d btn-xs" onclick="aocRemovePhaseDoc(${a.id},'${p.key}',${d.id})"><i class="fas fa-times"></i></button>
-                </div>`;
-              }).join('')}
-            </div>`:''}
-            ${noteHist.length?`<div style="margin-top:8px;background:var(--g50);padding:8px;border-radius:6px">
-              <div style="font-size:10.5px;font-weight:600;color:var(--g500);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-history"></i> Note History (${noteHist.length})</div>
-              ${[...noteHist].reverse().map(n=>`<div style="padding:6px 8px;background:#fff;border-left:3px solid ${p.color};border-radius:4px;margin-bottom:4px">
-                <div style="font-size:12px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${escHtml(n.text||'')}</div>
-                <div style="font-size:10px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}${n.by?' · '+escHtml(n.by):''}</div>
-              </div>`).join('')}
-            </div>`:''}
-          </div>`;
-        }).join('')}
+      <div style="background:var(--g100);border-radius:10px;height:8px;overflow:hidden"><div style="background:var(--gn);height:100%;width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--g600)">
+        <span class="badge bp">${done}/${AOC_PHASES.length} phases</span>
+        <span>${pct}%</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-p btn-sm" style="flex:1" onclick="openAocWindow(${a.id})"><i class="fas fa-external-link-alt"></i> Open</button>
+        <button class="btn btn-ol btn-sm" onclick="openEditAoc(${a.id})"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-d btn-sm" onclick="delAoc(${a.id})"><i class="fas fa-trash"></i></button>
       </div>
     </div>`;
+  }).join('')+`</div>`;
+}
+
+function openAocWindow(id){
+  const a=aocList.find(x=>x.id===id);if(!a)return;
+  const phaseCards=AOC_PHASES.map(p=>{
+    const ph=a.phases?.[p.key]||{};
+    const done=ph.done?'✓':'';
+    const fileCount=(ph.files||[]).length+(ph.docIds||[]).length;
+    const noteCount=(ph.notes||[]).length;
+    return `<div onclick="window.opener&&window.opener.openAocPhaseWindow(${id},'${p.key}')" style="cursor:pointer;border-radius:14px;padding:20px;color:#fff;background:linear-gradient(135deg,${p.color},${p.color}dd);box-shadow:0 6px 18px ${p.color}55;transition:transform .2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <i class="fas ${p.icon}" style="font-size:32px;opacity:.85"></i>
+        <span style="background:rgba(255,255,255,.25);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">${ph.done?'COMPLETED':'PENDING'}</span>
+      </div>
+      <div style="font-size:16px;font-weight:700;margin-top:12px;line-height:1.25">${p.label}</div>
+      <div style="display:flex;gap:12px;margin-top:10px;font-size:11.5px;opacity:.9">
+        <span><i class="fas fa-paperclip"></i> ${fileCount} files</span>
+        <span><i class="fas fa-sticky-note"></i> ${noteCount} notes</span>
+      </div>
+      <div style="margin-top:10px;font-size:11px;opacity:.85"><i class="fas fa-external-link-alt"></i> Click to open phase</div>
+    </div>`;
   }).join('');
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(a.name)} — AOC Tracking</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>body{font-family:'Kanit',-apple-system,sans-serif;margin:0;background:#f1f5f9;color:#0f172a}
+.hd{background:linear-gradient(135deg,#1565C0,#4A2C6D);color:#fff;padding:24px 32px}
+.hd h1{margin:0;font-size:24px}.hd p{margin:6px 0 0;opacity:.9;font-size:13px}
+.wrap{padding:24px 32px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}</style></head><body>
+<div class="hd"><h1><i class="fas fa-plane-departure"></i> ${escHtml(a.name)}</h1><p>${escHtml(a.operator||'')} ${a.contact?'· '+escHtml(a.contact):''}</p></div>
+<div class="wrap"><h2 style="margin:0 0 16px;font-size:16px;color:#334155">Phases</h2><div class="grid">${phaseCards}</div></div>
+</body></html>`;
+  const w=window.open('','_blank');if(!w){Swal.fire({icon:'warning',title:'Popup blocked'});return;}
+  w.document.open();w.document.write(html);w.document.close();
+}
+
+function openAocPhaseWindow(id,key){
+  const a=aocList.find(x=>x.id===id);if(!a)return;
+  const p=AOC_PHASES.find(x=>x.key===key);if(!p)return;
+  const ph=a.phases?.[key]||{};
+  const files=(ph.files||[]).map(f=>`<a href="${f.url||'#'}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f1f5f9;border-radius:6px;text-decoration:none;color:#0f172a;font-size:12.5px;margin:0 6px 6px 0"><i class="fas fa-file"></i> ${escHtml(f.name)}</a>`).join('')||'<span style="color:#94a3b8;font-size:12px">No files</span>';
+  const docs=(ph.docIds||[]).map(did=>{const d=DB.docs.find(x=>x.id===did);return d?`<div style="padding:8px 12px;background:#f8fafc;border-left:3px solid ${p.color};border-radius:6px;margin-bottom:6px"><code style="font-size:11px;color:#475569">${escHtml(d.fsdNo||'')}</code> — <strong>${escHtml(d.subject||'')}</strong></div>`:'';}).join('')||'<span style="color:#94a3b8;font-size:12px">No attached documents</span>';
+  const notes=(ph.notes||[]).slice().reverse().map(n=>`<div style="padding:10px 12px;background:#fff;border-left:3px solid ${p.color};border-radius:6px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.04)"><div style="white-space:pre-wrap;font-size:13px">${escHtml(n.text||'')}</div><div style="font-size:11px;color:#94a3b8;margin-top:4px"><i class="far fa-clock"></i> ${n.at?new Date(n.at).toLocaleString('en-GB'):''}${n.by?' · '+escHtml(n.by):''}</div></div>`).join('')||'<span style="color:#94a3b8;font-size:12px">No notes</span>';
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${p.label} — ${escHtml(a.name)}</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>body{font-family:'Kanit',-apple-system,sans-serif;margin:0;background:#f8fafc;color:#0f172a}
+.hd{background:linear-gradient(135deg,${p.color},${p.color}cc);color:#fff;padding:24px 32px}
+.hd h1{margin:0;font-size:22px}.hd p{margin:4px 0 0;opacity:.9;font-size:13px}
+.wrap{padding:24px 32px;max-width:960px;margin:0 auto}
+.sec{background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.sec h3{margin:0 0 12px;font-size:14px;color:#475569;text-transform:uppercase;letter-spacing:.5px}
+.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:${ph.done?'#dcfce7':'#fee2e2'};color:${ph.done?'#166534':'#991b1b'}}</style></head><body>
+<div class="hd"><h1><i class="fas ${p.icon}"></i> ${p.label}</h1><p>${escHtml(a.name)} · <span class="badge" style="background:rgba(255,255,255,.25);color:#fff">${ph.done?'COMPLETED':'PENDING'}</span></p></div>
+<div class="wrap">
+  <div class="sec"><h3><i class="fas fa-paperclip"></i> Attached Files</h3>${files}</div>
+  <div class="sec"><h3><i class="fas fa-file-alt"></i> Attached Documents</h3>${docs}</div>
+  <div class="sec"><h3><i class="fas fa-history"></i> Note History (${(ph.notes||[]).length})</h3>${notes}</div>
+</div></body></html>`;
+  const w=window.open('','_blank');if(!w){Swal.fire({icon:'warning',title:'Popup blocked'});return;}
+  w.document.open();w.document.write(html);w.document.close();
 }
 function openAddAoc(){eAocId=null;document.getElementById('moAocT').textContent='Add Company';['aName','aOperator','aContact','aNote'].forEach(id=>document.getElementById(id).value='');openMo('moAoc');}
 function openEditAoc(id){const a=aocList.find(x=>x.id===id);if(!a)return;eAocId=id;document.getElementById('moAocT').textContent='Edit Company';document.getElementById('aName').value=a.name||'';document.getElementById('aOperator').value=a.operator||'';document.getElementById('aContact').value=a.contact||'';document.getElementById('aNote').value=a.note||'';openMo('moAoc');}
@@ -1649,46 +1659,42 @@ function refHr(){
   body.innerHTML=`
     <!-- Stat Boxes -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px">
-      <div onclick="toggleHrList()" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(59,130,246,.25)">
+      <div onclick="openHrListWindow('all')" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(59,130,246,.25)">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">Total Employees</div>
           <div style="font-size:36px;font-weight:800;line-height:1">${total}</div></div>
           <i class="fas fa-users" style="font-size:34px;opacity:.4"></i>
         </div>
-        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-${_hrListOpen?'chevron-up':'chevron-down'}"></i> ${_hrListOpen?'Hide':'Show'} list</div>
+        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-external-link-alt"></i> Click to open list</div>
       </div>
-      <div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(16,185,129,.25)">
+      <div onclick="openHrListWindow('gov')" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(16,185,129,.25)">
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">เจ้าหน้าที่รัฐ</div>
-          <div style="font-size:36px;font-weight:800;line-height:1">${gov}</div><div style="font-size:11px;opacity:.85;margin-top:4px">Government Officials</div></div>
+          <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">Government Officials</div>
+          <div style="font-size:36px;font-weight:800;line-height:1">${gov}</div></div>
           <i class="fas fa-user-tie" style="font-size:34px;opacity:.4"></i>
         </div>
+        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-external-link-alt"></i> Click to open list</div>
       </div>
-      <div style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(245,158,11,.25)">
+      <div onclick="openHrListWindow('contract')" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,.25)">
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">เจ้าหน้าที่ตามสัญญา</div>
-          <div style="font-size:36px;font-weight:800;line-height:1">${con}</div><div style="font-size:11px;opacity:.85;margin-top:4px">Contract Staff</div></div>
+          <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">Contract Staff</div>
+          <div style="font-size:36px;font-weight:800;line-height:1">${con}</div></div>
           <i class="fas fa-file-signature" style="font-size:34px;opacity:.4"></i>
         </div>
+        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-external-link-alt"></i> Click to open list</div>
       </div>
     </div>
 
-    ${_hrListOpen?`<div style="border:1px solid var(--g200);border-radius:10px;background:#fff;margin-bottom:16px;max-height:360px;overflow:auto">
-      <div style="padding:10px 12px;font-weight:600;font-size:12px;color:var(--g600);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--g100);background:var(--g50)">All Employees (click to view)</div>
-      ${listRows||'<div class="empty" style="padding:20px"><i class="fas fa-users"></i><p>No employees yet.</p></div>'}
-    </div>`:''}
-
     <!-- Chart + Org Structure -->
     <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:16px" id="hrGridWrap">
-      <div style="border:1px solid var(--g200);border-radius:10px;background:#fff;padding:16px">
-        <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--g700)"><i class="fas fa-chart-bar" style="color:var(--p)"></i> Employee Overview</h4>
-        <div style="position:relative;height:340px"><canvas id="hrChart"></canvas></div>
+      <div class="card"><div class="ch"><h3><i class="fas fa-chart-pie" style="color:var(--pu)"></i> Employee Overview</h3></div>
+        <div class="cb"><div class="cw"><canvas id="hrChart"></canvas></div></div>
       </div>
-      <div style="border:1px solid var(--g200);border-radius:10px;background:#fff;padding:16px;max-height:520px;overflow:auto">
+      <div style="border:1px solid var(--g200);border-radius:10px;background:#fff;padding:16px;max-height:640px;overflow:auto">
         <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--g700)"><i class="fas fa-sitemap" style="color:var(--p)"></i> Department Structure</h4>
         ${heads.length?`<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px">${heads.map(nodeLg).join('')}</div>`:'<div style="color:var(--g400);font-size:12px;margin-bottom:12px">No Head assigned</div>'}
         <div style="font-size:11px;color:var(--g500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px"><i class="fas fa-user-shield"></i> Deputies (${deputies.length})</div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:12px">${deputies.length?deputies.slice(0,4).map(nodeSm).join(''):'<div style="color:var(--g400);font-size:12px;grid-column:1/-1">None</div>'}</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px">${deputies.length?deputies.map(nodeDeputy).join(''):'<div style="color:var(--g400);font-size:12px">None</div>'}</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
           <div><div style="text-align:center;background:#dbeafe;color:#1e40af;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">PEL (${pel.length})</div>${pel.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
           <div><div style="text-align:center;background:#dcfce7;color:#166534;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">OPS (${ops.length})</div>${ops.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
@@ -1696,12 +1702,48 @@ function refHr(){
         </div>
       </div>
     </div>`;
-  // Draw chart
+  // Draw doughnut chart (Status Distribution style)
   setTimeout(()=>{
     const cv=document.getElementById('hrChart');if(!cv||typeof Chart==='undefined')return;
     if(window._hrChart)window._hrChart.destroy();
-    window._hrChart=new Chart(cv.getContext('2d'),{type:'bar',data:{labels:['Total','เจ้าหน้าที่รัฐ','เจ้าหน้าที่ตามสัญญา','PEL','OPS','AIR'],datasets:[{label:'Employees',data:[total,gov,con,pel.length+hrList.filter(h=>_empDeptGroup(h)==='PEL'&&(_isHead(h)||_isDeputy(h))).length,ops.length+hrList.filter(h=>_empDeptGroup(h)==='OPS'&&(_isHead(h)||_isDeputy(h))).length,air.length+hrList.filter(h=>_empDeptGroup(h)==='AIR'&&(_isHead(h)||_isDeputy(h))).length],backgroundColor:['#3b82f6','#10b981','#f59e0b','#6366f1','#22c55e','#eab308'],borderRadius:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,font:{family:'Kanit'}}},x:{ticks:{font:{family:'Kanit',size:11}}}}}});
+    const pelAll=hrList.filter(h=>_empDeptGroup(h)==='PEL').length;
+    const opsAll=hrList.filter(h=>_empDeptGroup(h)==='OPS').length;
+    const airAll=hrList.filter(h=>_empDeptGroup(h)==='AIR').length;
+    const other=Math.max(0,total-pelAll-opsAll-airAll);
+    window._hrChart=new Chart(cv.getContext('2d'),{type:'doughnut',
+      data:{labels:['Government','Contract','PEL','OPS','AIR','Other'],
+        datasets:[{data:[gov,con,pelAll,opsAll,airAll,other],
+          backgroundColor:['#10b981','#f59e0b','#1565C0','#2E7D32','#7B1FA2','#94A3B8'],borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{family:'Kanit',size:11},padding:8}}}}});
   },50);
+}
+function nodeDeputy(h){
+  const av=h.photo?`<img src="${h.photo}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--p)">`:`<div style="width:56px;height:56px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">${initials(h.name)}</div>`;
+  return `<div onclick="openHrDetail(${h.id})" style="min-width:110px;text-align:center;cursor:pointer;padding:8px;border:1px solid var(--g200);border-radius:8px;background:#fff;flex-shrink:0">${av}<div style="font-size:11.5px;font-weight:600;margin-top:6px;line-height:1.2">${escHtml(h.name)}</div><div style="font-size:10px;color:var(--g500);margin-top:2px;line-height:1.15">${escHtml(h.position||'')}</div></div>`;
+}
+function openHrListWindow(kind){
+  let list=hrList;let title='All Employees';
+  if(kind==='gov'){list=hrList.filter(h=>(h.empType||'gov')==='gov');title='Government Officials';}
+  else if(kind==='contract'){list=hrList.filter(h=>h.empType==='contract');title='Contract Staff';}
+  const rows=list.map(h=>{
+    const av=h.photo?`<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`:`<div style="width:44px;height:44px;border-radius:50%;background:#e2e8f0;color:#334155;display:flex;align-items:center;justify-content:center;font-weight:600">${initials(h.name)}</div>`;
+    const type=h.empType==='contract'?'Contract':'Government';
+    return `<tr><td style="width:60px">${av}</td><td><strong>${escHtml(h.name)}</strong><div style="font-size:11.5px;color:#64748b">${escHtml(h.position||'')}${h.department?' · '+escHtml(h.department):''}</div></td><td>${escHtml(h.employeeId||'—')}</td><td>${type}</td><td>${escHtml(h.branch||'')}</td><td>${escHtml(h.phone||'')}</td><td>${escHtml(h.email||'')}</td></tr>`;
+  }).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8">No employees</td></tr>';
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${title} — FSD</title>
+<style>body{font-family:'Kanit',-apple-system,sans-serif;margin:0;background:#f8fafc;color:#0f172a}
+.hd{background:linear-gradient(135deg,#1565C0,#4A2C6D);color:#fff;padding:18px 24px}
+.hd h1{margin:0;font-size:20px}.hd p{margin:4px 0 0;opacity:.85;font-size:12px}
+.wrap{padding:20px 24px}table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+th{background:#f1f5f9;text-align:left;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #e2e8f0}
+td{padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;vertical-align:middle}
+tr:hover td{background:#f8fafc}</style></head><body>
+<div class="hd"><h1><i></i>${title}</h1><p>${list.length} employee(s)</p></div>
+<div class="wrap"><table><thead><tr><th></th><th>Name / Position</th><th>Employee ID</th><th>Type</th><th>Branch</th><th>Phone</th><th>Email</th></tr></thead><tbody>${rows}</tbody></table></div>
+</body></html>`;
+  const w=window.open('','_blank');if(!w){Swal.fire({icon:'warning',title:'Popup blocked',text:'Please allow popups.'});return;}
+  w.document.open();w.document.write(html);w.document.close();
 }
 function clearHrPhoto(){_hrPhoto='';const p=document.getElementById('hPhoto');if(p)p.value='';const r=document.getElementById('hPhotoRow');if(r)r.style.display='none';}
 function setHrPhotoPreview(d){_hrPhoto=d||'';const row=document.getElementById('hPhotoRow');if(!d){if(row)row.style.display='none';return;}document.getElementById('hPhotoPrev').src=d;row.style.display='';}
@@ -1732,7 +1774,7 @@ function openAddHr(){
   ['hFirst','hLast','hPos','hDept','hBirth','hAge','hPhone','hEmail','hAddr','hStart','hTenure','hEduLvl','hEduYear','hBio','hName','hEmpId','hBranch'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const et=document.getElementById('hEmpType');if(et)et.value='gov';
   const st=document.getElementById('hStatus');if(st)st.value='active';
-  clearHrPhoto();renderHrCertList();openMo('moHr');
+  clearHrPhoto();renderHrCertList();const _m=document.getElementById('moHr');if(_m)_m.style.zIndex='2000';openMo('moHr');
 }
 function openEditHr(id){
   const h=hrList.find(x=>x.id===id);if(!h)return;
@@ -1761,6 +1803,7 @@ function openEditHr(id){
   _hrCertFiles=Array.isArray(h.certFiles)?[...h.certFiles]:[];
   hrCalcAge();hrCalcTenure();renderHrCertList();
   if(h.photo)setHrPhotoPreview(h.photo);else clearHrPhoto();
+  const _m=document.getElementById('moHr');if(_m)_m.style.zIndex='2000';
   openMo('moHr');
 }
 async function saveHrEmployee(){
