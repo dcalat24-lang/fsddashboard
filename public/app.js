@@ -1649,46 +1649,42 @@ function refHr(){
   body.innerHTML=`
     <!-- Stat Boxes -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px">
-      <div onclick="toggleHrList()" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(59,130,246,.25)">
+      <div onclick="openHrListWindow('all')" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(59,130,246,.25)">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">Total Employees</div>
           <div style="font-size:36px;font-weight:800;line-height:1">${total}</div></div>
           <i class="fas fa-users" style="font-size:34px;opacity:.4"></i>
         </div>
-        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-${_hrListOpen?'chevron-up':'chevron-down'}"></i> ${_hrListOpen?'Hide':'Show'} list</div>
+        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-external-link-alt"></i> Click to open list</div>
       </div>
-      <div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(16,185,129,.25)">
+      <div onclick="openHrListWindow('gov')" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(16,185,129,.25)">
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">เจ้าหน้าที่รัฐ</div>
-          <div style="font-size:36px;font-weight:800;line-height:1">${gov}</div><div style="font-size:11px;opacity:.85;margin-top:4px">Government Officials</div></div>
+          <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">Government Officials</div>
+          <div style="font-size:36px;font-weight:800;line-height:1">${gov}</div></div>
           <i class="fas fa-user-tie" style="font-size:34px;opacity:.4"></i>
         </div>
+        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-external-link-alt"></i> Click to open list</div>
       </div>
-      <div style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(245,158,11,.25)">
+      <div onclick="openHrListWindow('contract')" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,.25)">
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">เจ้าหน้าที่ตามสัญญา</div>
-          <div style="font-size:36px;font-weight:800;line-height:1">${con}</div><div style="font-size:11px;opacity:.85;margin-top:4px">Contract Staff</div></div>
+          <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">Contract Staff</div>
+          <div style="font-size:36px;font-weight:800;line-height:1">${con}</div></div>
           <i class="fas fa-file-signature" style="font-size:34px;opacity:.4"></i>
         </div>
+        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-external-link-alt"></i> Click to open list</div>
       </div>
     </div>
 
-    ${_hrListOpen?`<div style="border:1px solid var(--g200);border-radius:10px;background:#fff;margin-bottom:16px;max-height:360px;overflow:auto">
-      <div style="padding:10px 12px;font-weight:600;font-size:12px;color:var(--g600);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--g100);background:var(--g50)">All Employees (click to view)</div>
-      ${listRows||'<div class="empty" style="padding:20px"><i class="fas fa-users"></i><p>No employees yet.</p></div>'}
-    </div>`:''}
-
     <!-- Chart + Org Structure -->
     <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:16px" id="hrGridWrap">
-      <div style="border:1px solid var(--g200);border-radius:10px;background:#fff;padding:16px">
-        <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--g700)"><i class="fas fa-chart-bar" style="color:var(--p)"></i> Employee Overview</h4>
-        <div style="position:relative;height:340px"><canvas id="hrChart"></canvas></div>
+      <div class="card"><div class="ch"><h3><i class="fas fa-chart-pie" style="color:var(--pu)"></i> Employee Overview</h3></div>
+        <div class="cb"><div class="cw"><canvas id="hrChart"></canvas></div></div>
       </div>
-      <div style="border:1px solid var(--g200);border-radius:10px;background:#fff;padding:16px;max-height:520px;overflow:auto">
+      <div style="border:1px solid var(--g200);border-radius:10px;background:#fff;padding:16px;max-height:640px;overflow:auto">
         <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--g700)"><i class="fas fa-sitemap" style="color:var(--p)"></i> Department Structure</h4>
         ${heads.length?`<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px">${heads.map(nodeLg).join('')}</div>`:'<div style="color:var(--g400);font-size:12px;margin-bottom:12px">No Head assigned</div>'}
         <div style="font-size:11px;color:var(--g500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px"><i class="fas fa-user-shield"></i> Deputies (${deputies.length})</div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:12px">${deputies.length?deputies.slice(0,4).map(nodeSm).join(''):'<div style="color:var(--g400);font-size:12px;grid-column:1/-1">None</div>'}</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px">${deputies.length?deputies.map(nodeDeputy).join(''):'<div style="color:var(--g400);font-size:12px">None</div>'}</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
           <div><div style="text-align:center;background:#dbeafe;color:#1e40af;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">PEL (${pel.length})</div>${pel.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
           <div><div style="text-align:center;background:#dcfce7;color:#166534;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">OPS (${ops.length})</div>${ops.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
@@ -1696,12 +1692,48 @@ function refHr(){
         </div>
       </div>
     </div>`;
-  // Draw chart
+  // Draw doughnut chart (Status Distribution style)
   setTimeout(()=>{
     const cv=document.getElementById('hrChart');if(!cv||typeof Chart==='undefined')return;
     if(window._hrChart)window._hrChart.destroy();
-    window._hrChart=new Chart(cv.getContext('2d'),{type:'bar',data:{labels:['Total','เจ้าหน้าที่รัฐ','เจ้าหน้าที่ตามสัญญา','PEL','OPS','AIR'],datasets:[{label:'Employees',data:[total,gov,con,pel.length+hrList.filter(h=>_empDeptGroup(h)==='PEL'&&(_isHead(h)||_isDeputy(h))).length,ops.length+hrList.filter(h=>_empDeptGroup(h)==='OPS'&&(_isHead(h)||_isDeputy(h))).length,air.length+hrList.filter(h=>_empDeptGroup(h)==='AIR'&&(_isHead(h)||_isDeputy(h))).length],backgroundColor:['#3b82f6','#10b981','#f59e0b','#6366f1','#22c55e','#eab308'],borderRadius:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,font:{family:'Kanit'}}},x:{ticks:{font:{family:'Kanit',size:11}}}}}});
+    const pelAll=hrList.filter(h=>_empDeptGroup(h)==='PEL').length;
+    const opsAll=hrList.filter(h=>_empDeptGroup(h)==='OPS').length;
+    const airAll=hrList.filter(h=>_empDeptGroup(h)==='AIR').length;
+    const other=Math.max(0,total-pelAll-opsAll-airAll);
+    window._hrChart=new Chart(cv.getContext('2d'),{type:'doughnut',
+      data:{labels:['Government','Contract','PEL','OPS','AIR','Other'],
+        datasets:[{data:[gov,con,pelAll,opsAll,airAll,other],
+          backgroundColor:['#10b981','#f59e0b','#1565C0','#2E7D32','#7B1FA2','#94A3B8'],borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{family:'Kanit',size:11},padding:8}}}}});
   },50);
+}
+function nodeDeputy(h){
+  const av=h.photo?`<img src="${h.photo}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--p)">`:`<div style="width:56px;height:56px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">${initials(h.name)}</div>`;
+  return `<div onclick="openHrDetail(${h.id})" style="min-width:110px;text-align:center;cursor:pointer;padding:8px;border:1px solid var(--g200);border-radius:8px;background:#fff;flex-shrink:0">${av}<div style="font-size:11.5px;font-weight:600;margin-top:6px;line-height:1.2">${escHtml(h.name)}</div><div style="font-size:10px;color:var(--g500);margin-top:2px;line-height:1.15">${escHtml(h.position||'')}</div></div>`;
+}
+function openHrListWindow(kind){
+  let list=hrList;let title='All Employees';
+  if(kind==='gov'){list=hrList.filter(h=>(h.empType||'gov')==='gov');title='Government Officials';}
+  else if(kind==='contract'){list=hrList.filter(h=>h.empType==='contract');title='Contract Staff';}
+  const rows=list.map(h=>{
+    const av=h.photo?`<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`:`<div style="width:44px;height:44px;border-radius:50%;background:#e2e8f0;color:#334155;display:flex;align-items:center;justify-content:center;font-weight:600">${initials(h.name)}</div>`;
+    const type=h.empType==='contract'?'Contract':'Government';
+    return `<tr><td style="width:60px">${av}</td><td><strong>${escHtml(h.name)}</strong><div style="font-size:11.5px;color:#64748b">${escHtml(h.position||'')}${h.department?' · '+escHtml(h.department):''}</div></td><td>${escHtml(h.employeeId||'—')}</td><td>${type}</td><td>${escHtml(h.branch||'')}</td><td>${escHtml(h.phone||'')}</td><td>${escHtml(h.email||'')}</td></tr>`;
+  }).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8">No employees</td></tr>';
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${title} — FSD</title>
+<style>body{font-family:'Kanit',-apple-system,sans-serif;margin:0;background:#f8fafc;color:#0f172a}
+.hd{background:linear-gradient(135deg,#1565C0,#4A2C6D);color:#fff;padding:18px 24px}
+.hd h1{margin:0;font-size:20px}.hd p{margin:4px 0 0;opacity:.85;font-size:12px}
+.wrap{padding:20px 24px}table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+th{background:#f1f5f9;text-align:left;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #e2e8f0}
+td{padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;vertical-align:middle}
+tr:hover td{background:#f8fafc}</style></head><body>
+<div class="hd"><h1><i></i>${title}</h1><p>${list.length} employee(s)</p></div>
+<div class="wrap"><table><thead><tr><th></th><th>Name / Position</th><th>Employee ID</th><th>Type</th><th>Branch</th><th>Phone</th><th>Email</th></tr></thead><tbody>${rows}</tbody></table></div>
+</body></html>`;
+  const w=window.open('','_blank');if(!w){Swal.fire({icon:'warning',title:'Popup blocked',text:'Please allow popups.'});return;}
+  w.document.open();w.document.write(html);w.document.close();
 }
 function clearHrPhoto(){_hrPhoto='';const p=document.getElementById('hPhoto');if(p)p.value='';const r=document.getElementById('hPhotoRow');if(r)r.style.display='none';}
 function setHrPhotoPreview(d){_hrPhoto=d||'';const row=document.getElementById('hPhotoRow');if(!d){if(row)row.style.display='none';return;}document.getElementById('hPhotoPrev').src=d;row.style.display='';}
