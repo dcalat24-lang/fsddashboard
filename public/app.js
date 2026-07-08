@@ -1966,13 +1966,6 @@ function openHrDetail(id){
     </div>
     <div style="margin-bottom:14px">${info('Current Address',escHtml(h.address||'').replace(/\n/g,'<br>'),'fa-map-marker-alt','#f59e0b')}</div>
     ${h.bio?`<div style="margin-bottom:14px">${info('Bio',escHtml(h.bio).replace(/\n/g,'<br>'),'fa-quote-left','#64748b')}</div>`:''}
-      ${info('Phone',escHtml(h.phone||''))}
-      ${info('Email',escHtml(h.email||''))}
-      ${info('Start Date',h.startDate||'')}
-      ${info('Years of Service',_yearsBetween(h.startDate))}
-    </div>
-    <div style="margin-bottom:14px">${info('Current Address',escHtml(h.address||'').replace(/\n/g,'<br>'))}</div>
-    ${h.bio?`<div style="margin-bottom:14px">${info('Bio',escHtml(h.bio).replace(/\n/g,'<br>'))}</div>`:''}
 
     <div style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
