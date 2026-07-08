@@ -1764,7 +1764,7 @@ function openAddHr(){
   ['hFirst','hLast','hPos','hDept','hBirth','hAge','hPhone','hEmail','hAddr','hStart','hTenure','hEduLvl','hEduYear','hBio','hName','hEmpId','hBranch'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const et=document.getElementById('hEmpType');if(et)et.value='gov';
   const st=document.getElementById('hStatus');if(st)st.value='active';
-  clearHrPhoto();renderHrCertList();openMo('moHr');
+  clearHrPhoto();renderHrCertList();const _m=document.getElementById('moHr');if(_m)_m.style.zIndex='2000';openMo('moHr');
 }
 function openEditHr(id){
   const h=hrList.find(x=>x.id===id);if(!h)return;
