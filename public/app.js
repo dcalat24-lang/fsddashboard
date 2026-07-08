@@ -1451,75 +1451,85 @@ function renderAoc(el){
 function refAoc(){
   const body=document.getElementById('aocBody');if(!body)return;
   if(!aocList.length){body.innerHTML=`<div class="empty"><i class="fas fa-plane-departure"></i><p>No companies yet — click "Add Company" to start.</p></div>`;return;}
-  body.innerHTML=aocList.map(a=>{
+  body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">`+aocList.map(a=>{
     const done=AOC_PHASES.filter(p=>a.phases?.[p.key]?.done).length;
     const pct=Math.round(done/AOC_PHASES.length*100);
-    return `<div class="tc" style="margin-bottom:12px">
-      <div class="tc-h" onclick="tkTog(this)">
-        <div style="min-width:0;flex:1">
-          <div class="tc-dn">${escHtml(a.name)}</div>
-          <div class="tc-ds">${escHtml(a.operator||'')} ${a.contact?'· '+escHtml(a.contact):''}</div>
-          <div style="background:var(--g100);border-radius:10px;height:6px;margin-top:6px;overflow:hidden;max-width:280px"><div style="background:var(--gn);height:100%;width:${pct}%"></div></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <span class="badge bp">${done}/${AOC_PHASES.length} phases</span>
-          <i class="fas fa-chevron-down" style="color:var(--g400);font-size:11px;transition:.2s"></i>
-        </div>
+    return `<div style="border:1px solid var(--g200);border-radius:12px;padding:16px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.05);display:flex;flex-direction:column;gap:10px">
+      <div style="cursor:pointer" onclick="openAocWindow(${a.id})">
+        <div style="font-size:15px;font-weight:700;color:var(--g900)"><i class="fas fa-plane-departure" style="color:var(--p);margin-right:6px"></i>${escHtml(a.name)}</div>
+        <div style="font-size:12px;color:var(--g500);margin-top:2px">${escHtml(a.operator||'')} ${a.contact?'· '+escHtml(a.contact):''}</div>
       </div>
-      <div class="tc-b">
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap">
-          <button class="btn btn-ol btn-sm" onclick="openEditAoc(${a.id})"><i class="fas fa-edit"></i> Edit Info</button>
-          <button class="btn btn-d btn-sm" onclick="delAoc(${a.id})"><i class="fas fa-trash"></i> Delete</button>
-        </div>
-        ${AOC_PHASES.map(p=>{
-          const ph=a.phases?.[p.key]||{};
-          const files=Array.isArray(ph.files)?ph.files:[];
-          const pDocIds=Array.isArray(ph.docIds)?ph.docIds:[];
-          const noteHist=Array.isArray(ph.notes)?ph.notes:[];
-          return `<div style="border:1px solid var(--g200);border-left:4px solid ${p.color};border-radius:var(--r);padding:12px;margin-bottom:10px;background:#fff">
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <i class="fas ${p.icon}" style="color:${p.color};font-size:18px"></i>
-              <strong style="flex:1;font-size:13px">${p.label}</strong>
-              <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--g600);cursor:pointer">
-                <input type="checkbox" ${ph.done?'checked':''} onchange="aocToggleDone(${a.id},'${p.key}',this.checked)"> Completed
-              </label>
-              <label class="btn btn-ol btn-sm" style="cursor:pointer;margin:0"><i class="fas fa-paperclip"></i> Attach File
-                <input type="file" accept=".pdf,image/jpeg,image/jpg" multiple style="display:none" onchange="aocUploadFiles(${a.id},'${p.key}',this.files,this)">
-              </label>
-              <button class="btn btn-c btn-sm" onclick="openAocDocSearch(${a.id},'${p.key}')"><i class="fas fa-search"></i> Attach Document</button>
-            </div>
-            <textarea id="aocPn-${a.id}-${p.key}" placeholder="Notes for this phase..." style="width:100%;margin-top:8px;min-height:52px;font-size:12.5px">${escHtml(ph.note||'')}</textarea>
-            <div style="display:flex;justify-content:flex-end;margin-top:6px">
-              <button class="btn btn-p btn-sm" onclick="aocSavePhaseNote(${a.id},'${p.key}')"><i class="fas fa-save"></i> Save Note</button>
-            </div>
-            ${files.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${files.map((f,i)=>`
-              <div class="fi2" style="cursor:pointer" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','${f.type||''}')">
-                ${ficon(f.type)}<span class="fn" style="max-width:150px">${escHtml(f.name)}</span>
-                <button onclick="event.stopPropagation();aocRemoveFile(${a.id},'${p.key}',${i})" style="background:none;border:none;color:var(--rd);cursor:pointer;font-size:11px"><i class="fas fa-times"></i></button>
-              </div>`).join('')}</div>`:''}
-            ${pDocIds.length?`<div style="margin-top:8px">
-              <div style="font-size:10.5px;font-weight:600;color:var(--g500);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Attached Documents (${pDocIds.length})</div>
-              ${pDocIds.map(did=>{const d=DB.docs.find(x=>x.id===did);if(!d)return`<div style="font-size:12px;color:var(--g400)">Doc #${did} (not found)</div>`;
-                return `<div style="display:flex;gap:8px;align-items:center;padding:5px 8px;background:var(--g50);border-radius:6px;margin-bottom:3px">
-                  <code style="font-size:11px">${d.fsdNo}</code>
-                  <span style="flex:1;font-size:12px" class="tdl" onclick="openDet(${d.id})">${escHtml(d.subject)}</span>
-                  ${sbadge(d.status)}
-                  <button class="btn btn-d btn-xs" onclick="aocRemovePhaseDoc(${a.id},'${p.key}',${d.id})"><i class="fas fa-times"></i></button>
-                </div>`;
-              }).join('')}
-            </div>`:''}
-            ${noteHist.length?`<div style="margin-top:8px;background:var(--g50);padding:8px;border-radius:6px">
-              <div style="font-size:10.5px;font-weight:600;color:var(--g500);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-history"></i> Note History (${noteHist.length})</div>
-              ${[...noteHist].reverse().map(n=>`<div style="padding:6px 8px;background:#fff;border-left:3px solid ${p.color};border-radius:4px;margin-bottom:4px">
-                <div style="font-size:12px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${escHtml(n.text||'')}</div>
-                <div style="font-size:10px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}${n.by?' · '+escHtml(n.by):''}</div>
-              </div>`).join('')}
-            </div>`:''}
-          </div>`;
-        }).join('')}
+      <div style="background:var(--g100);border-radius:10px;height:8px;overflow:hidden"><div style="background:var(--gn);height:100%;width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--g600)">
+        <span class="badge bp">${done}/${AOC_PHASES.length} phases</span>
+        <span>${pct}%</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-p btn-sm" style="flex:1" onclick="openAocWindow(${a.id})"><i class="fas fa-external-link-alt"></i> Open</button>
+        <button class="btn btn-ol btn-sm" onclick="openEditAoc(${a.id})"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-d btn-sm" onclick="delAoc(${a.id})"><i class="fas fa-trash"></i></button>
       </div>
     </div>`;
+  }).join('')+`</div>`;
+}
+
+function openAocWindow(id){
+  const a=aocList.find(x=>x.id===id);if(!a)return;
+  const phaseCards=AOC_PHASES.map(p=>{
+    const ph=a.phases?.[p.key]||{};
+    const done=ph.done?'✓':'';
+    const fileCount=(ph.files||[]).length+(ph.docIds||[]).length;
+    const noteCount=(ph.notes||[]).length;
+    return `<div onclick="window.opener&&window.opener.openAocPhaseWindow(${id},'${p.key}')" style="cursor:pointer;border-radius:14px;padding:20px;color:#fff;background:linear-gradient(135deg,${p.color},${p.color}dd);box-shadow:0 6px 18px ${p.color}55;transition:transform .2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <i class="fas ${p.icon}" style="font-size:32px;opacity:.85"></i>
+        <span style="background:rgba(255,255,255,.25);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">${ph.done?'COMPLETED':'PENDING'}</span>
+      </div>
+      <div style="font-size:16px;font-weight:700;margin-top:12px;line-height:1.25">${p.label}</div>
+      <div style="display:flex;gap:12px;margin-top:10px;font-size:11.5px;opacity:.9">
+        <span><i class="fas fa-paperclip"></i> ${fileCount} files</span>
+        <span><i class="fas fa-sticky-note"></i> ${noteCount} notes</span>
+      </div>
+      <div style="margin-top:10px;font-size:11px;opacity:.85"><i class="fas fa-external-link-alt"></i> Click to open phase</div>
+    </div>`;
   }).join('');
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(a.name)} — AOC Tracking</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>body{font-family:'Kanit',-apple-system,sans-serif;margin:0;background:#f1f5f9;color:#0f172a}
+.hd{background:linear-gradient(135deg,#1565C0,#4A2C6D);color:#fff;padding:24px 32px}
+.hd h1{margin:0;font-size:24px}.hd p{margin:6px 0 0;opacity:.9;font-size:13px}
+.wrap{padding:24px 32px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}</style></head><body>
+<div class="hd"><h1><i class="fas fa-plane-departure"></i> ${escHtml(a.name)}</h1><p>${escHtml(a.operator||'')} ${a.contact?'· '+escHtml(a.contact):''}</p></div>
+<div class="wrap"><h2 style="margin:0 0 16px;font-size:16px;color:#334155">Phases</h2><div class="grid">${phaseCards}</div></div>
+</body></html>`;
+  const w=window.open('','_blank');if(!w){Swal.fire({icon:'warning',title:'Popup blocked'});return;}
+  w.document.open();w.document.write(html);w.document.close();
+}
+
+function openAocPhaseWindow(id,key){
+  const a=aocList.find(x=>x.id===id);if(!a)return;
+  const p=AOC_PHASES.find(x=>x.key===key);if(!p)return;
+  const ph=a.phases?.[key]||{};
+  const files=(ph.files||[]).map(f=>`<a href="${f.url||'#'}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f1f5f9;border-radius:6px;text-decoration:none;color:#0f172a;font-size:12.5px;margin:0 6px 6px 0"><i class="fas fa-file"></i> ${escHtml(f.name)}</a>`).join('')||'<span style="color:#94a3b8;font-size:12px">No files</span>';
+  const docs=(ph.docIds||[]).map(did=>{const d=DB.docs.find(x=>x.id===did);return d?`<div style="padding:8px 12px;background:#f8fafc;border-left:3px solid ${p.color};border-radius:6px;margin-bottom:6px"><code style="font-size:11px;color:#475569">${escHtml(d.fsdNo||'')}</code> — <strong>${escHtml(d.subject||'')}</strong></div>`:'';}).join('')||'<span style="color:#94a3b8;font-size:12px">No attached documents</span>';
+  const notes=(ph.notes||[]).slice().reverse().map(n=>`<div style="padding:10px 12px;background:#fff;border-left:3px solid ${p.color};border-radius:6px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.04)"><div style="white-space:pre-wrap;font-size:13px">${escHtml(n.text||'')}</div><div style="font-size:11px;color:#94a3b8;margin-top:4px"><i class="far fa-clock"></i> ${n.at?new Date(n.at).toLocaleString('en-GB'):''}${n.by?' · '+escHtml(n.by):''}</div></div>`).join('')||'<span style="color:#94a3b8;font-size:12px">No notes</span>';
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${p.label} — ${escHtml(a.name)}</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>body{font-family:'Kanit',-apple-system,sans-serif;margin:0;background:#f8fafc;color:#0f172a}
+.hd{background:linear-gradient(135deg,${p.color},${p.color}cc);color:#fff;padding:24px 32px}
+.hd h1{margin:0;font-size:22px}.hd p{margin:4px 0 0;opacity:.9;font-size:13px}
+.wrap{padding:24px 32px;max-width:960px;margin:0 auto}
+.sec{background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.sec h3{margin:0 0 12px;font-size:14px;color:#475569;text-transform:uppercase;letter-spacing:.5px}
+.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:${ph.done?'#dcfce7':'#fee2e2'};color:${ph.done?'#166534':'#991b1b'}}</style></head><body>
+<div class="hd"><h1><i class="fas ${p.icon}"></i> ${p.label}</h1><p>${escHtml(a.name)} · <span class="badge" style="background:rgba(255,255,255,.25);color:#fff">${ph.done?'COMPLETED':'PENDING'}</span></p></div>
+<div class="wrap">
+  <div class="sec"><h3><i class="fas fa-paperclip"></i> Attached Files</h3>${files}</div>
+  <div class="sec"><h3><i class="fas fa-file-alt"></i> Attached Documents</h3>${docs}</div>
+  <div class="sec"><h3><i class="fas fa-history"></i> Note History (${(ph.notes||[]).length})</h3>${notes}</div>
+</div></body></html>`;
+  const w=window.open('','_blank');if(!w){Swal.fire({icon:'warning',title:'Popup blocked'});return;}
+  w.document.open();w.document.write(html);w.document.close();
 }
 function openAddAoc(){eAocId=null;document.getElementById('moAocT').textContent='Add Company';['aName','aOperator','aContact','aNote'].forEach(id=>document.getElementById(id).value='');openMo('moAoc');}
 function openEditAoc(id){const a=aocList.find(x=>x.id===id);if(!a)return;eAocId=id;document.getElementById('moAocT').textContent='Edit Company';document.getElementById('aName').value=a.name||'';document.getElementById('aOperator').value=a.operator||'';document.getElementById('aContact').value=a.contact||'';document.getElementById('aNote').value=a.note||'';openMo('moAoc');}
