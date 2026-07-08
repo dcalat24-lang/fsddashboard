@@ -1673,25 +1673,18 @@ function _empDeptGroup(h){
 function _isHead(h){return /HEAD|CHIEF|DIRECTOR/i.test(h.position||'')&&!/DEPUTY|VICE|ACTING/i.test(h.position||'');}
 function _isDeputy(h){return /DEPUTY|VICE|ACTING HEAD/i.test(h.position||'');}
 function refHr(){
+  if(_hrView.mode==='list')return _renderHrList(_hrView.kind);
+  _renderHrDashboard();
+}
+function _renderHrDashboard(){
+  const head=document.getElementById('hrHead');
+  if(head)head.innerHTML=`<h3><i class="fas fa-id-badge" style="color:var(--p)"></i> HR Management Dashboard</h3>
+    <button class="btn btn-p btn-sm" onclick="openAddHr()"><i class="fas fa-user-plus"></i> Add Employee</button>`;
   const body=document.getElementById('hrBody');if(!body)return;
   const total=hrList.length;
   const gov=hrList.filter(h=>(h.empType||'gov')==='gov').length;
   const con=hrList.filter(h=>h.empType==='contract').length;
-  const listRows=hrList.map(h=>{
-    const av=h.photo?`<img src="${h.photo}" style="width:36px;height:36px;border-radius:50%;object-fit:cover">`:`<div style="width:36px;height:36px;border-radius:50%;background:var(--g100);color:var(--g600);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">${initials(h.name)}</div>`;
-    const typeBadge=h.empType==='contract'?'<span class="badge bo" style="font-size:10px">Contract</span>':'<span class="badge bg" style="font-size:10px">Gov</span>';
-    return `<div onclick="openHrDetail(${h.id})" style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--g50)'" onmouseout="this.style.background=''">
-      ${av}
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px">${escHtml(h.name)}</div>
-        <div style="font-size:11.5px;color:var(--g500)">${escHtml(h.position||'')}${h.department?' · '+escHtml(h.department):''}</div>
-      </div>
-      ${typeBadge}
-      <i class="fas fa-chevron-right" style="color:var(--g400);font-size:11px"></i>
-    </div>`;
-  }).join('');
 
-  // groups for org structure
   const heads=hrList.filter(_isHead);
   const deputies=hrList.filter(_isDeputy);
   const pel=hrList.filter(h=>_empDeptGroup(h)==='PEL'&&!_isHead(h)&&!_isDeputy(h));
@@ -1700,35 +1693,35 @@ function refHr(){
 
   const nodeSm=(h)=>{const av=h.photo?`<img src="${h.photo}" style="width:34px;height:34px;border-radius:50%;object-fit:cover">`:`<div style="width:34px;height:34px;border-radius:50%;background:var(--g100);color:var(--g600);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">${initials(h.name)}</div>`;
     return `<div onclick="openHrDetail(${h.id})" style="display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--g200);border-radius:6px;background:#fff;cursor:pointer;margin-bottom:4px">${av}<div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:600;line-height:1.15">${escHtml(h.name)}</div><div style="font-size:10.5px;color:var(--g500);line-height:1.15">${escHtml(h.position||'')}</div></div></div>`;};
-  const nodeLg=(h)=>{const av=h.photo?`<img src="${h.photo}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--p)">`:`<div style="width:72px;height:72px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;border:3px solid var(--p)">${initials(h.name)}</div>`;
-    return `<div onclick="openHrDetail(${h.id})" style="text-align:center;cursor:pointer;padding:10px;border:2px solid var(--p);border-radius:10px;background:linear-gradient(135deg,#fff,#f0f7ff)">${av}<div style="font-size:14px;font-weight:700;margin-top:8px">${escHtml(h.name)}</div><div style="font-size:11.5px;color:var(--g600)">${escHtml(h.position||'')}</div></div>`;};
+  const nodeLg=(h)=>{const av=h.photo?`<img src="${h.photo}" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid var(--p)">`:`<div style="width:84px;height:84px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;border:3px solid var(--p)">${initials(h.name)}</div>`;
+    return `<div onclick="openHrDetail(${h.id})" style="text-align:center;cursor:pointer;padding:12px 16px;border:2px solid var(--p);border-radius:12px;background:linear-gradient(135deg,#fff,#f0f7ff);min-width:180px">${av}<div style="font-size:14px;font-weight:700;margin-top:8px">${escHtml(h.name)}</div><div style="font-size:11.5px;color:var(--g600)">${escHtml(h.position||'')}</div></div>`;};
 
   body.innerHTML=`
     <!-- Stat Boxes -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px">
-      <div onclick="openHrListWindow('all')" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(59,130,246,.25)">
+      <div onclick="showHrList('all')" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(59,130,246,.25)">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">Total Employees</div>
           <div style="font-size:36px;font-weight:800;line-height:1">${total}</div></div>
           <i class="fas fa-users" style="font-size:34px;opacity:.4"></i>
         </div>
-        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-external-link-alt"></i> Click to open list</div>
+        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-eye"></i> Click to view list</div>
       </div>
-      <div onclick="openHrListWindow('gov')" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(16,185,129,.25)">
+      <div onclick="showHrList('gov')" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(16,185,129,.25)">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">Government Officials</div>
           <div style="font-size:36px;font-weight:800;line-height:1">${gov}</div></div>
           <i class="fas fa-user-tie" style="font-size:34px;opacity:.4"></i>
         </div>
-        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-external-link-alt"></i> Click to open list</div>
+        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-eye"></i> Click to view list</div>
       </div>
-      <div onclick="openHrListWindow('contract')" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,.25)">
+      <div onclick="showHrList('contract')" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:18px;border-radius:12px;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,.25)">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div><div style="font-size:12px;opacity:.9;text-transform:uppercase;letter-spacing:.5px">Contract Staff</div>
           <div style="font-size:36px;font-weight:800;line-height:1">${con}</div></div>
           <i class="fas fa-file-signature" style="font-size:34px;opacity:.4"></i>
         </div>
-        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-external-link-alt"></i> Click to open list</div>
+        <div style="font-size:11px;margin-top:8px;opacity:.85"><i class="fas fa-eye"></i> Click to view list</div>
       </div>
     </div>
 
@@ -1738,10 +1731,11 @@ function refHr(){
         <div class="cb"><div class="cw"><canvas id="hrChart"></canvas></div></div>
       </div>
       <div style="border:1px solid var(--g200);border-radius:10px;background:#fff;padding:16px;max-height:640px;overflow:auto">
-        <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--g700)"><i class="fas fa-sitemap" style="color:var(--p)"></i> Department Structure</h4>
-        ${heads.length?`<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px">${heads.map(nodeLg).join('')}</div>`:'<div style="color:var(--g400);font-size:12px;margin-bottom:12px">No Head assigned</div>'}
-        <div style="font-size:11px;color:var(--g500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px"><i class="fas fa-user-shield"></i> Deputies (${deputies.length})</div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px">${deputies.length?deputies.map(nodeDeputy).join(''):'<div style="color:var(--g400);font-size:12px">None</div>'}</div>
+        <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--g700);text-align:center"><i class="fas fa-sitemap" style="color:var(--p)"></i> Department Structure</h4>
+        ${heads.length?`<div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">${heads.map(nodeLg).join('')}</div>`:'<div style="color:var(--g400);font-size:12px;text-align:center;margin-bottom:12px">No Head assigned</div>'}
+        ${deputies.length?`<div style="display:flex;justify-content:center;align-items:center;margin:6px 0"><div style="width:2px;height:14px;background:var(--g300)"></div></div>`:''}
+        <div style="font-size:11px;color:var(--g500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;text-align:center"><i class="fas fa-user-shield"></i> Deputies (${deputies.length})</div>
+        <div style="display:flex;justify-content:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">${deputies.length?deputies.map(nodeDeputy).join(''):'<div style="color:var(--g400);font-size:12px">None</div>'}</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
           <div><div style="text-align:center;background:#dbeafe;color:#1e40af;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">PEL (${pel.length})</div>${pel.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
           <div><div style="text-align:center;background:#dcfce7;color:#166534;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">OPS (${ops.length})</div>${ops.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
@@ -1749,7 +1743,6 @@ function refHr(){
         </div>
       </div>
     </div>`;
-  // Draw doughnut chart (Status Distribution style)
   setTimeout(()=>{
     const cv=document.getElementById('hrChart');if(!cv||typeof Chart==='undefined')return;
     if(window._hrChart)window._hrChart.destroy();
@@ -1766,31 +1759,46 @@ function refHr(){
   },50);
 }
 function nodeDeputy(h){
-  const av=h.photo?`<img src="${h.photo}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--p)">`:`<div style="width:56px;height:56px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">${initials(h.name)}</div>`;
-  return `<div onclick="openHrDetail(${h.id})" style="min-width:110px;text-align:center;cursor:pointer;padding:8px;border:1px solid var(--g200);border-radius:8px;background:#fff;flex-shrink:0">${av}<div style="font-size:11.5px;font-weight:600;margin-top:6px;line-height:1.2">${escHtml(h.name)}</div><div style="font-size:10px;color:var(--g500);margin-top:2px;line-height:1.15">${escHtml(h.position||'')}</div></div>`;
+  const av=h.photo?`<img src="${h.photo}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--p)">`:`<div style="width:64px;height:64px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700">${initials(h.name)}</div>`;
+  return `<div onclick="openHrDetail(${h.id})" style="min-width:120px;text-align:center;cursor:pointer;padding:8px;border:1px solid var(--g200);border-radius:8px;background:#fff;flex-shrink:0"><div style="display:flex;justify-content:center">${av}</div><div style="font-size:11.5px;font-weight:600;margin-top:6px;line-height:1.2">${escHtml(h.name)}</div><div style="font-size:10px;color:var(--g500);margin-top:2px;line-height:1.15">${escHtml(h.position||'')}</div></div>`;
 }
-function openHrListWindow(kind){
-  let list=hrList;let title='All Employees';
-  if(kind==='gov'){list=hrList.filter(h=>(h.empType||'gov')==='gov');title='Government Officials';}
-  else if(kind==='contract'){list=hrList.filter(h=>h.empType==='contract');title='Contract Staff';}
+function showHrList(kind){_hrView={mode:'list',kind};_renderHrList(kind);}
+function openHrListWindow(kind){showHrList(kind);} // legacy alias
+function _renderHrList(kind){
+  let list=hrList;let title='All Employees';let ic='fa-users';let color='#3b82f6';
+  if(kind==='gov'){list=hrList.filter(h=>(h.empType||'gov')==='gov');title='Government Officials';ic='fa-user-tie';color='#10b981';}
+  else if(kind==='contract'){list=hrList.filter(h=>h.empType==='contract');title='Contract Staff';ic='fa-file-signature';color='#f59e0b';}
+  const head=document.getElementById('hrHead');
+  if(head)head.innerHTML=`<h3><button class="btn btn-ol btn-sm" onclick="backToHrDash()" style="margin-right:8px"><i class="fas fa-arrow-left"></i> Back</button>
+    <i class="fas ${ic}" style="color:${color}"></i> ${title}</h3>
+    <span class="badge bp">${list.length} employee(s)</span>`;
+  const body=document.getElementById('hrBody');if(!body)return;
   const rows=list.map(h=>{
     const av=h.photo?`<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`:`<div style="width:44px;height:44px;border-radius:50%;background:#e2e8f0;color:#334155;display:flex;align-items:center;justify-content:center;font-weight:600">${initials(h.name)}</div>`;
-    const type=h.empType==='contract'?'Contract':'Government';
-    return `<tr><td style="width:60px">${av}</td><td><strong>${escHtml(h.name)}</strong><div style="font-size:11.5px;color:#64748b">${escHtml(h.position||'')}${h.department?' · '+escHtml(h.department):''}</div></td><td>${escHtml(h.employeeId||'—')}</td><td>${type}</td><td>${escHtml(h.branch||'')}</td><td>${escHtml(h.phone||'')}</td><td>${escHtml(h.email||'')}</td></tr>`;
-  }).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8">No employees</td></tr>';
-  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${title} — FSD</title>
-<style>body{font-family:'Kanit',-apple-system,sans-serif;margin:0;background:#f8fafc;color:#0f172a}
-.hd{background:linear-gradient(135deg,#1565C0,#4A2C6D);color:#fff;padding:18px 24px}
-.hd h1{margin:0;font-size:20px}.hd p{margin:4px 0 0;opacity:.85;font-size:12px}
-.wrap{padding:20px 24px}table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06)}
-th{background:#f1f5f9;text-align:left;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #e2e8f0}
-td{padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;vertical-align:middle}
-tr:hover td{background:#f8fafc}</style></head><body>
-<div class="hd"><h1><i></i>${title}</h1><p>${list.length} employee(s)</p></div>
-<div class="wrap"><table><thead><tr><th></th><th>Name / Position</th><th>Employee ID</th><th>Type</th><th>Branch</th><th>Phone</th><th>Email</th></tr></thead><tbody>${rows}</tbody></table></div>
-</body></html>`;
-  const w=window.open('','_blank');if(!w){Swal.fire({icon:'warning',title:'Popup blocked',text:'Please allow popups.'});return;}
-  w.document.open();w.document.write(html);w.document.close();
+    const type=h.empType==='contract'?'<span class="badge bo">Contract</span>':'<span class="badge bg">Government</span>';
+    return `<tr style="cursor:pointer" onclick="openHrDetail(${h.id})" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+      <td style="width:60px">${av}</td>
+      <td><strong>${escHtml(h.name)}</strong><div style="font-size:11.5px;color:var(--g500)">${escHtml(h.position||'')}${h.department?' · '+escHtml(h.department):''}</div></td>
+      <td>${escHtml(h.employeeId||'—')}</td>
+      <td>${type}</td>
+      <td>${escHtml(h.branch||'')}</td>
+      <td>${escHtml(h.phone||'')}</td>
+      <td>${escHtml(h.email||'')}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-p btn-xs" onclick="event.stopPropagation();openHrDetail(${h.id})"><i class="fas fa-eye"></i></button>
+        <button class="btn btn-ol btn-xs" onclick="event.stopPropagation();openEditHr(${h.id})"><i class="fas fa-edit"></i></button>
+      </td></tr>`;
+  }).join('')||'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--g400)">No employees</td></tr>';
+  body.innerHTML=`<div style="background:linear-gradient(135deg,${color},${color}cc);color:#fff;border-radius:12px;padding:18px 22px;margin-bottom:16px">
+      <div style="font-size:20px;font-weight:700"><i class="fas ${ic}"></i> ${title}</div>
+      <div style="opacity:.9;font-size:13px;margin-top:4px">${list.length} employee(s)</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--g200);border-radius:12px;overflow:hidden">
+      <table class="tbl" style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:var(--g50)"><th></th><th style="text-align:left;padding:10px">Name / Position</th><th style="text-align:left;padding:10px">Employee ID</th><th style="text-align:left;padding:10px">Type</th><th style="text-align:left;padding:10px">Branch</th><th style="text-align:left;padding:10px">Phone</th><th style="text-align:left;padding:10px">Email</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 function clearHrPhoto(){_hrPhoto='';const p=document.getElementById('hPhoto');if(p)p.value='';const r=document.getElementById('hPhotoRow');if(r)r.style.display='none';}
 function setHrPhotoPreview(d){_hrPhoto=d||'';const row=document.getElementById('hPhotoRow');if(!d){if(row)row.style.display='none';return;}document.getElementById('hPhotoPrev').src=d;row.style.display='';}
