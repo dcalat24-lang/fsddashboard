@@ -1651,13 +1651,16 @@ function fileToB64(f){return new Promise((res,rej)=>{const r=new FileReader();r.
 // ════════════════════════════════════════════════
 let hrList=[], eHrId=null, _hrPhoto='';
 async function loadHr(){if(!GAS_URL)return;try{const r=await fetch(`${GAS_URL}?action=getHr`);const j=await r.json();if(Array.isArray(j.hr))hrList=j.hr;}catch(e){console.warn('hr load',e);}}
+let _hrView={mode:'dashboard'};
 function renderHr(el){
-  el.innerHTML=`<div class="card"><div class="ch">
+  _hrView={mode:'dashboard'};
+  el.innerHTML=`<div class="card"><div class="ch" id="hrHead">
     <h3><i class="fas fa-id-badge" style="color:var(--p)"></i> HR Management Dashboard</h3>
     <button class="btn btn-p btn-sm" onclick="openAddHr()"><i class="fas fa-user-plus"></i> Add Employee</button>
   </div><div class="cb" id="hrBody"></div></div>`;
   loadHr().then(()=>refHr());
 }
+function backToHrDash(){_hrView={mode:'dashboard'};refHr();}
 let _hrListOpen=false;
 function toggleHrList(){_hrListOpen=!_hrListOpen;refHr();}
 function _empDeptGroup(h){
