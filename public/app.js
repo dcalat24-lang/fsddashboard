@@ -1793,6 +1793,7 @@ function openEditHr(id){
   _hrCertFiles=Array.isArray(h.certFiles)?[...h.certFiles]:[];
   hrCalcAge();hrCalcTenure();renderHrCertList();
   if(h.photo)setHrPhotoPreview(h.photo);else clearHrPhoto();
+  const _m=document.getElementById('moHr');if(_m)_m.style.zIndex='2000';
   openMo('moHr');
 }
 async function saveHrEmployee(){
