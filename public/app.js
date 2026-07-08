@@ -1929,35 +1929,43 @@ async function hrRemoveEducation(id,idx){const h=hrList.find(x=>x.id===id);if(!h
 function openHrDetail(id){
   const h=hrList.find(x=>x.id===id);if(!h)return;
   const body=document.getElementById('hrDetBody');if(!body)return;
-  const avatar=h.photo?`<img src="${h.photo}" style="width:96px;height:96px;border-radius:50%;object-fit:cover">`:`<div style="width:96px;height:96px;border-radius:50%;background:var(--g100);color:var(--g600);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:28px">${initials(h.name)}</div>`;
-  const info=(l,v)=>`<div><div style="font-size:10.5px;color:var(--g500);text-transform:uppercase;letter-spacing:.5px">${l}</div><div style="font-size:13px;color:var(--g900);margin-top:2px">${v||'<span style="color:var(--g400)">—</span>'}</div></div>`;
+  const avatar=h.photo?`<img src="${h.photo}" style="width:170px;height:170px;border-radius:50%;object-fit:cover;border:5px solid #fff;box-shadow:0 8px 24px rgba(0,0,0,.25)">`:`<div style="width:170px;height:170px;border-radius:50%;background:#fff;color:#1565C0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:52px;border:5px solid #fff;box-shadow:0 8px 24px rgba(0,0,0,.25)">${initials(h.name)}</div>`;
+  const info=(l,v,ic,c)=>`<div style="background:#fff;border-left:4px solid ${c||'#3b82f6'};border-radius:8px;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:10.5px;color:var(--g500);text-transform:uppercase;letter-spacing:.5px"><i class="fas ${ic||'fa-info-circle'}" style="color:${c||'#3b82f6'};margin-right:4px"></i>${l}</div><div style="font-size:14px;color:var(--g900);margin-top:3px;font-weight:600">${v||'<span style="color:var(--g400);font-weight:400">—</span>'}</div></div>`;
   const courses=Array.isArray(h.courses)?h.courses:[];
   const edu=Array.isArray(h.education)?h.education:[];
   const work=Array.isArray(h.workHistory)?h.workHistory:[];
   const certs=Array.isArray(h.certFiles)?h.certFiles:[];
+  const heroBg=h.empType==='contract'?'linear-gradient(135deg,#f59e0b,#d97706)':'linear-gradient(135deg,#1565C0,#4A2C6D)';
   body.innerHTML=`
-    <div style="display:flex;gap:18px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap">
+    <div style="background:${heroBg};color:#fff;border-radius:16px;padding:28px;margin-bottom:18px;display:flex;gap:24px;align-items:center;flex-wrap:wrap;box-shadow:0 8px 28px rgba(0,0,0,.15)">
       ${avatar}
       <div style="flex:1;min-width:260px">
-        <div style="font-size:24px;font-weight:700">${escHtml(h.name)}</div>
-        <div style="color:var(--g600);font-size:14px;margin-top:2px">${escHtml(h.position||'')} ${h.department?'· '+escHtml(h.department):''}</div>
-        <div style="color:var(--g500);font-size:12.5px;margin-top:4px">Employee ID: ${escHtml(h.employeeId||'—')}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-          <span class="badge ${h.status==='active'?'bg':'bo'}">${(h.status||'active').toUpperCase()}</span>
-          <span class="badge ${h.empType==='contract'?'bo':'bg'}">${h.empType==='contract'?'Contract':'Government'}</span>
-          ${h.branch?`<span class="badge bc"><i class="fas fa-building"></i> ${escHtml(h.branch)}</span>`:''}
+        <div style="font-size:30px;font-weight:800;line-height:1.15">${escHtml(h.name)}</div>
+        <div style="font-size:15px;margin-top:6px;opacity:.95">${escHtml(h.position||'')} ${h.department?'· '+escHtml(h.department):''}</div>
+        <div style="font-size:12.5px;margin-top:6px;opacity:.85">Employee ID: <strong>${escHtml(h.employeeId||'—')}</strong></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+          <span style="background:rgba(255,255,255,.25);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600">${(h.status||'active').toUpperCase()}</span>
+          <span style="background:rgba(255,255,255,.25);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600">${h.empType==='contract'?'Contract':'Government'}</span>
+          ${h.branch?`<span style="background:rgba(255,255,255,.25);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600"><i class="fas fa-building"></i> ${escHtml(h.branch)}</span>`:''}
         </div>
       </div>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-p btn-sm" onclick="openEditHr(${h.id})"><i class="fas fa-edit"></i> Edit Info</button>
-        <button class="btn btn-d btn-sm" onclick="delHr(${h.id})"><i class="fas fa-trash"></i></button>
+      <div style="display:flex;gap:6px;flex-direction:column">
+        <button class="btn btn-sm" style="background:#fff;color:#1565C0;border:none;font-weight:600" onclick="openEditHr(${h.id})"><i class="fas fa-edit"></i> Edit Info</button>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="delHr(${h.id})"><i class="fas fa-trash"></i> Delete</button>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding:12px;background:var(--g50);border-radius:var(--r);margin-bottom:14px">
-      ${info('First Name',escHtml(h.firstName||''))}
-      ${info('Last Name',escHtml(h.lastName||''))}
-      ${info('Date of Birth',h.birthDate||'')}
-      ${info('Age',_yearsBetween(h.birthDate))}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px">
+      ${info('First Name',escHtml(h.firstName||''),'fa-user','#3b82f6')}
+      ${info('Last Name',escHtml(h.lastName||''),'fa-user','#3b82f6')}
+      ${info('Date of Birth',h.birthDate||'','fa-birthday-cake','#ec4899')}
+      ${info('Age',_yearsBetween(h.birthDate),'fa-hourglass-half','#ec4899')}
+      ${info('Phone',escHtml(h.phone||''),'fa-phone','#10b981')}
+      ${info('Email',escHtml(h.email||''),'fa-envelope','#10b981')}
+      ${info('Start Date',h.startDate||'','fa-calendar-plus','#8b5cf6')}
+      ${info('Years of Service',_yearsBetween(h.startDate),'fa-briefcase','#8b5cf6')}
+    </div>
+    <div style="margin-bottom:14px">${info('Current Address',escHtml(h.address||'').replace(/\n/g,'<br>'),'fa-map-marker-alt','#f59e0b')}</div>
+    ${h.bio?`<div style="margin-bottom:14px">${info('Bio',escHtml(h.bio).replace(/\n/g,'<br>'),'fa-quote-left','#64748b')}</div>`:''}
       ${info('Phone',escHtml(h.phone||''))}
       ${info('Email',escHtml(h.email||''))}
       ${info('Start Date',h.startDate||'')}
