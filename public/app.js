@@ -1501,17 +1501,25 @@ function _renderAocCompany(id){
     const ph=a.phases?.[p.key]||{};
     const fileCount=(ph.files||[]).length+(ph.docIds||[]).length;
     const noteCount=(ph.notes||[]).length;
-    return `<div onclick="showAocPhase(${id},'${p.key}')" style="cursor:pointer;border-radius:14px;padding:20px;color:#fff;background:linear-gradient(135deg,${p.color},${p.color}dd);box-shadow:0 6px 18px ${p.color}55;transition:transform .2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+    const done=!!ph.done;
+    const bg=done?'linear-gradient(135deg,#16a34a,#15803d)':'#ffffff';
+    const fg=done?'#fff':'#0f172a';
+    const sub=done?'rgba(255,255,255,.9)':'#64748b';
+    const chipBg=done?'rgba(255,255,255,.25)':`${p.color}15`;
+    const chipFg=done?'#fff':p.color;
+    const border=done?'transparent':`${p.color}55`;
+    const shadow=done?'0 6px 18px rgba(22,163,74,.35)':'0 4px 14px rgba(15,23,42,.06)';
+    return `<div onclick="showAocPhase(${id},'${p.key}')" style="cursor:pointer;border-radius:14px;padding:20px;color:${fg};background:${bg};border:1px solid ${border};box-shadow:${shadow};transition:transform .2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <i class="fas ${p.icon}" style="font-size:32px;opacity:.85"></i>
-        <span style="background:rgba(255,255,255,.25);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">${ph.done?'COMPLETED':'PENDING'}</span>
+        <i class="fas ${p.icon}" style="font-size:32px;color:${done?'#fff':p.color};opacity:${done?.9:1}"></i>
+        <span style="background:${chipBg};color:${chipFg};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">${done?'COMPLETED':'PENDING'}</span>
       </div>
       <div style="font-size:16px;font-weight:700;margin-top:12px;line-height:1.25">${p.label}</div>
-      <div style="display:flex;gap:12px;margin-top:10px;font-size:11.5px;opacity:.9">
+      <div style="display:flex;gap:12px;margin-top:10px;font-size:11.5px;color:${sub}">
         <span><i class="fas fa-paperclip"></i> ${fileCount} files</span>
         <span><i class="fas fa-sticky-note"></i> ${noteCount} notes</span>
       </div>
-      <div style="margin-top:10px;font-size:11px;opacity:.85"><i class="fas fa-hand-pointer"></i> Click to open phase</div>
+      <div style="margin-top:10px;font-size:11px;color:${sub}"><i class="fas fa-hand-pointer"></i> Click to open phase</div>
     </div>`;
   }).join('');
   body.innerHTML=`
