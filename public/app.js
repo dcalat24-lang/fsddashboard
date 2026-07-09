@@ -1782,9 +1782,12 @@ function _renderHrList(kind){
     <i class="fas ${ic}" style="color:${color}"></i> ${title}</h3>
     <span class="badge bp">${list.length} employee(s)</span>`;
   const body=document.getElementById('hrBody');if(!body)return;
-  const rows=list.map(h=>{
+  const isAdmin=CU&&CU.role==='admin';
+  const rows=list.map((h,idx)=>{
     const av=h.photo?`<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`:`<div style="width:44px;height:44px;border-radius:50%;background:#e2e8f0;color:#334155;display:flex;align-items:center;justify-content:center;font-weight:600">${initials(h.name)}</div>`;
     const type=h.empType==='contract'?'<span class="badge bo">Contract</span>':'<span class="badge bg">Government</span>';
+    const reorder=isAdmin?`<button class="btn btn-ol btn-xs" title="Move up" ${idx===0?'disabled':''} onclick="event.stopPropagation();hrReorder(${h.id},-1)"><i class="fas fa-arrow-up"></i></button>
+      <button class="btn btn-ol btn-xs" title="Move down" ${idx===list.length-1?'disabled':''} onclick="event.stopPropagation();hrReorder(${h.id},1)"><i class="fas fa-arrow-down"></i></button>`:'';
     return `<tr style="cursor:pointer" onclick="openHrDetail(${h.id})" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
       <td style="width:60px">${av}</td>
       <td><strong>${escHtml(h.name)}</strong><div style="font-size:11.5px;color:var(--g500)">${escHtml(h.position||'')}${h.department?' · '+escHtml(h.department):''}</div></td>
@@ -1794,6 +1797,7 @@ function _renderHrList(kind){
       <td>${escHtml(h.phone||'')}</td>
       <td>${escHtml(h.email||'')}</td>
       <td style="text-align:right;white-space:nowrap">
+        ${reorder}
         <button class="btn btn-p btn-xs" onclick="event.stopPropagation();openHrDetail(${h.id})"><i class="fas fa-eye"></i></button>
         <button class="btn btn-ol btn-xs" onclick="event.stopPropagation();openEditHr(${h.id})"><i class="fas fa-edit"></i></button>
       </td></tr>`;
