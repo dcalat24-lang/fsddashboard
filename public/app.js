@@ -1659,7 +1659,7 @@ function fileToB64(f){return new Promise((res,rej)=>{const r=new FileReader();r.
 //  HR MANAGEMENT
 // ════════════════════════════════════════════════
 let hrList=[], eHrId=null, _hrPhoto='';
-async function loadHr(){if(!GAS_URL)return;try{const r=await fetch(`${GAS_URL}?action=getHr`);const j=await r.json();if(Array.isArray(j.hr))hrList=j.hr;}catch(e){console.warn('hr load',e);}}
+async function loadHr(){if(!GAS_URL)return;try{const r=await fetch(`${GAS_URL}?action=getHr`);const j=await r.json();if(Array.isArray(j.hr)){hrList=j.hr;_applyHrOrder&&_applyHrOrder();}}catch(e){console.warn('hr load',e);}}
 let _hrView={mode:'dashboard'};
 function renderHr(el){
   _hrView={mode:'dashboard'};
