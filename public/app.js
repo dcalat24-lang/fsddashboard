@@ -704,6 +704,7 @@ function viewFile(name,encUrl,type){
     }
     document.getElementById('pdfFrame').src=src;
     document.getElementById('pdfOpenBtn').onclick=()=>window.open(url,'_blank');
+    const _mp=document.getElementById('moPDF');if(_mp)_mp.style.zIndex='3000';
     openMo('moPDF');
   } else if(isPDF){
     Swal.fire({icon:'info',title:name,text:'PDF is stored in Google Drive. No preview URL yet.',confirmButtonColor:'var(--p)'});
