@@ -704,6 +704,7 @@ function viewFile(name,encUrl,type){
     }
     document.getElementById('pdfFrame').src=src;
     document.getElementById('pdfOpenBtn').onclick=()=>window.open(url,'_blank');
+    const _mp=document.getElementById('moPDF');if(_mp)_mp.style.zIndex='3000';
     openMo('moPDF');
   } else if(isPDF){
     Swal.fire({icon:'info',title:name,text:'PDF is stored in Google Drive. No preview URL yet.',confirmButtonColor:'var(--p)'});
@@ -1501,17 +1502,25 @@ function _renderAocCompany(id){
     const ph=a.phases?.[p.key]||{};
     const fileCount=(ph.files||[]).length+(ph.docIds||[]).length;
     const noteCount=(ph.notes||[]).length;
-    return `<div onclick="showAocPhase(${id},'${p.key}')" style="cursor:pointer;border-radius:14px;padding:20px;color:#fff;background:linear-gradient(135deg,${p.color},${p.color}dd);box-shadow:0 6px 18px ${p.color}55;transition:transform .2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+    const done=!!ph.done;
+    const bg=done?'linear-gradient(135deg,#16a34a,#15803d)':'#ffffff';
+    const fg=done?'#fff':'#0f172a';
+    const sub=done?'rgba(255,255,255,.9)':'#64748b';
+    const chipBg=done?'rgba(255,255,255,.25)':`${p.color}15`;
+    const chipFg=done?'#fff':p.color;
+    const border=done?'transparent':`${p.color}55`;
+    const shadow=done?'0 6px 18px rgba(22,163,74,.35)':'0 4px 14px rgba(15,23,42,.06)';
+    return `<div onclick="showAocPhase(${id},'${p.key}')" style="cursor:pointer;border-radius:14px;padding:20px;color:${fg};background:${bg};border:1px solid ${border};box-shadow:${shadow};transition:transform .2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <i class="fas ${p.icon}" style="font-size:32px;opacity:.85"></i>
-        <span style="background:rgba(255,255,255,.25);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">${ph.done?'COMPLETED':'PENDING'}</span>
+        <i class="fas ${p.icon}" style="font-size:32px;color:${done?'#fff':p.color};opacity:${done?.9:1}"></i>
+        <span style="background:${chipBg};color:${chipFg};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">${done?'COMPLETED':'PENDING'}</span>
       </div>
       <div style="font-size:16px;font-weight:700;margin-top:12px;line-height:1.25">${p.label}</div>
-      <div style="display:flex;gap:12px;margin-top:10px;font-size:11.5px;opacity:.9">
+      <div style="display:flex;gap:12px;margin-top:10px;font-size:11.5px;color:${sub}">
         <span><i class="fas fa-paperclip"></i> ${fileCount} files</span>
         <span><i class="fas fa-sticky-note"></i> ${noteCount} notes</span>
       </div>
-      <div style="margin-top:10px;font-size:11px;opacity:.85"><i class="fas fa-hand-pointer"></i> Click to open phase</div>
+      <div style="margin-top:10px;font-size:11px;color:${sub}"><i class="fas fa-hand-pointer"></i> Click to open phase</div>
     </div>`;
   }).join('');
   body.innerHTML=`
@@ -1536,7 +1545,7 @@ function _renderAocPhase(id,key){
   const files=(ph.files||[]);
   const filesHtml=files.length?files.map((f,i)=>`<div class="fi2" style="cursor:pointer" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','${f.type||gType(f.name)}')">${ficon(f.type||gType(f.name))}<span class="fn" style="max-width:220px">${escHtml(f.name)}</span><button onclick="event.stopPropagation();aocRemoveFile(${id},'${key}',${i})" style="background:none;border:none;color:var(--rd);cursor:pointer"><i class="fas fa-times"></i></button></div>`).join(''):'<div style="color:var(--g400);font-size:12px">No files yet.</div>';
   const docs=(ph.docIds||[]);
-  const docsHtml=docs.length?docs.map(did=>{const d=DB.docs.find(x=>x.id===did);return d?`<div style="padding:8px 12px;background:#f8fafc;border-left:3px solid ${p.color};border-radius:6px;margin-bottom:6px;display:flex;gap:8px;align-items:center"><div style="flex:1"><code style="font-size:11px;color:var(--g600)">${escHtml(d.fsdNo||'')}</code> — <strong>${escHtml(d.subject||'')}</strong></div><button class="btn btn-d btn-xs" onclick="aocRemovePhaseDoc(${id},'${key}',${did})"><i class="fas fa-times"></i></button></div>`:'';}).join(''):'<div style="color:var(--g400);font-size:12px">No attached documents.</div>';
+  const docsHtml=docs.length?docs.map(did=>{const d=DB.docs.find(x=>x.id===did);if(!d)return '';const df=(d.files||[]);const fileChips=df.length?df.map(f=>`<span onclick="event.stopPropagation();viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','${f.type||gType(f.name)}')" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--g200);border-radius:6px;padding:3px 8px;font-size:11px;margin-right:4px" title="Open ${escHtml(f.name)}">${ficon(f.type||gType(f.name))}<span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.name)}</span></span>`).join(''):'<span style="color:var(--g400);font-size:11px">(no files on this document)</span>';return `<div style="padding:10px 12px;background:#f8fafc;border-left:3px solid ${p.color};border-radius:6px;margin-bottom:6px"><div style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><code style="font-size:11px;color:var(--g600)">${escHtml(d.fsdNo||'')}</code> — <strong>${escHtml(d.subject||'')}</strong></div><button class="btn btn-ol btn-xs" onclick="event.stopPropagation();dlDoc(${did})" title="Open document"><i class="fas fa-external-link-alt"></i></button><button class="btn btn-d btn-xs" onclick="event.stopPropagation();aocRemovePhaseDoc(${id},'${key}',${did})"><i class="fas fa-times"></i></button></div><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${fileChips}</div></div>`;}).join(''):'<div style="color:var(--g400);font-size:12px">No attached documents.</div>';
   const notes=(ph.notes||[]).slice().reverse();
   const notesHtml=notes.length?notes.map(n=>`<div style="padding:10px 12px;background:#fff;border-left:3px solid ${p.color};border-radius:6px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.04)"><div style="white-space:pre-wrap;font-size:13px">${escHtml(n.text||'')}</div><div style="font-size:11px;color:var(--g500);margin-top:4px"><i class="far fa-clock"></i> ${n.at?new Date(n.at).toLocaleString('en-GB'):''}${n.by?' · '+escHtml(n.by):''}</div></div>`).join(''):'<div style="color:var(--g400);font-size:12px">No notes yet.</div>';
   body.innerHTML=`
@@ -1650,7 +1659,7 @@ function fileToB64(f){return new Promise((res,rej)=>{const r=new FileReader();r.
 //  HR MANAGEMENT
 // ════════════════════════════════════════════════
 let hrList=[], eHrId=null, _hrPhoto='';
-async function loadHr(){if(!GAS_URL)return;try{const r=await fetch(`${GAS_URL}?action=getHr`);const j=await r.json();if(Array.isArray(j.hr))hrList=j.hr;}catch(e){console.warn('hr load',e);}}
+async function loadHr(){if(!GAS_URL)return;try{const r=await fetch(`${GAS_URL}?action=getHr`);const j=await r.json();if(Array.isArray(j.hr)){hrList=j.hr;_applyHrOrder&&_applyHrOrder();}}catch(e){console.warn('hr load',e);}}
 let _hrView={mode:'dashboard'};
 function renderHr(el){
   _hrView={mode:'dashboard'};
@@ -1764,6 +1773,16 @@ function nodeDeputy(h){
 }
 function showHrList(kind){_hrView={mode:'list',kind};_renderHrList(kind);}
 function openHrListWindow(kind){showHrList(kind);} // legacy alias
+function _loadHrOrder(){try{return JSON.parse(localStorage.getItem('hrOrder')||'[]');}catch(_){return [];}}
+function _saveHrOrder(){try{localStorage.setItem('hrOrder',JSON.stringify(hrList.map(h=>h.id)));}catch(_){}}
+function _applyHrOrder(){const ord=_loadHrOrder();if(!ord.length)return;const pos={};ord.forEach((id,i)=>pos[id]=i);hrList.sort((a,b)=>{const pa=pos[a.id]??999999,pb=pos[b.id]??999999;return pa-pb;});}
+function hrReorder(id,dir){
+  if(!CU||CU.role!=='admin')return;
+  const i=hrList.findIndex(h=>h.id===id);if(i<0)return;
+  const j=i+dir;if(j<0||j>=hrList.length)return;
+  const tmp=hrList[i];hrList[i]=hrList[j];hrList[j]=tmp;
+  _saveHrOrder();refHr();
+}
 function _renderHrList(kind){
   let list=hrList;let title='All Employees';let ic='fa-users';let color='#3b82f6';
   if(kind==='gov'){list=hrList.filter(h=>(h.empType||'gov')==='gov');title='Government Officials';ic='fa-user-tie';color='#10b981';}
@@ -1773,9 +1792,12 @@ function _renderHrList(kind){
     <i class="fas ${ic}" style="color:${color}"></i> ${title}</h3>
     <span class="badge bp">${list.length} employee(s)</span>`;
   const body=document.getElementById('hrBody');if(!body)return;
-  const rows=list.map(h=>{
+  const isAdmin=CU&&CU.role==='admin';
+  const rows=list.map((h,idx)=>{
     const av=h.photo?`<img src="${h.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`:`<div style="width:44px;height:44px;border-radius:50%;background:#e2e8f0;color:#334155;display:flex;align-items:center;justify-content:center;font-weight:600">${initials(h.name)}</div>`;
     const type=h.empType==='contract'?'<span class="badge bo">Contract</span>':'<span class="badge bg">Government</span>';
+    const reorder=isAdmin?`<button class="btn btn-ol btn-xs" title="Move up" ${idx===0?'disabled':''} onclick="event.stopPropagation();hrReorder(${h.id},-1)"><i class="fas fa-arrow-up"></i></button>
+      <button class="btn btn-ol btn-xs" title="Move down" ${idx===list.length-1?'disabled':''} onclick="event.stopPropagation();hrReorder(${h.id},1)"><i class="fas fa-arrow-down"></i></button>`:'';
     return `<tr style="cursor:pointer" onclick="openHrDetail(${h.id})" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
       <td style="width:60px">${av}</td>
       <td><strong>${escHtml(h.name)}</strong><div style="font-size:11.5px;color:var(--g500)">${escHtml(h.position||'')}${h.department?' · '+escHtml(h.department):''}</div></td>
@@ -1785,6 +1807,7 @@ function _renderHrList(kind){
       <td>${escHtml(h.phone||'')}</td>
       <td>${escHtml(h.email||'')}</td>
       <td style="text-align:right;white-space:nowrap">
+        ${reorder}
         <button class="btn btn-p btn-xs" onclick="event.stopPropagation();openHrDetail(${h.id})"><i class="fas fa-eye"></i></button>
         <button class="btn btn-ol btn-xs" onclick="event.stopPropagation();openEditHr(${h.id})"><i class="fas fa-edit"></i></button>
       </td></tr>`;
@@ -1997,22 +2020,25 @@ function openHrDetail(id){
         <button class="btn btn-g btn-xs" onclick="hrAddCourse(${h.id})"><i class="fas fa-plus"></i> Add</button>
       </div>
       ${courses.length?courses.map((c,i)=>{
-        const badge=c.status==='passed'?'bg':c.status==='in_progress'?'bc':'bo';
         const cf=Array.isArray(c.files)?c.files:[];
-        return `<div style="border:1px solid var(--g200);border-radius:6px;padding:8px 10px;margin-bottom:6px">
-          <div style="display:flex;gap:8px;align-items:center">
-            <span style="flex:1;font-size:13px"><strong>${escHtml(c.name)}</strong> <span style="color:var(--g500);font-size:11.5px">${escHtml(c.date||'')}</span></span>
-            <select onchange="hrSetCourseStatus(${h.id},${i},this.value)" style="font-size:11px;padding:2px 4px">
-              <option value="planned" ${c.status==='planned'?'selected':''}>Planned</option>
-              <option value="in_progress" ${c.status==='in_progress'?'selected':''}>In Progress</option>
-              <option value="passed" ${c.status==='passed'?'selected':''}>Passed</option>
+        const st=c.status||'planned';
+        const stMap={planned:{bg:'#fee2e2',bd:'#ef4444',fg:'#991b1b',label:'Planned'},in_progress:{bg:'#fef9c3',bd:'#eab308',fg:'#854d0e',label:'In Progress'},passed:{bg:'#dcfce7',bd:'#22c55e',fg:'#166534',label:'Passed'}};
+        const s=stMap[st]||stMap.planned;
+        return `<div style="border:1px solid ${s.bd};background:${s.bg};border-radius:8px;padding:10px 12px;margin-bottom:6px">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span style="flex:1;min-width:180px;font-size:13px;color:${s.fg}"><strong>${escHtml(c.name)}</strong> <span style="opacity:.75;font-size:11.5px">${escHtml(c.date||'')}</span></span>
+            <span style="background:${s.bd};color:#fff;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px">${s.label}</span>
+            <select onchange="hrSetCourseStatus(${h.id},${i},this.value)" style="font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid ${s.bd};background:#fff;color:${s.fg};font-weight:600">
+              <option value="planned" ${st==='planned'?'selected':''}>Planned</option>
+              <option value="in_progress" ${st==='in_progress'?'selected':''}>In Progress</option>
+              <option value="passed" ${st==='passed'?'selected':''}>Passed</option>
             </select>
             <label class="btn btn-ol btn-xs" style="cursor:pointer;margin:0"><i class="fas fa-paperclip"></i> PDF
               <input type="file" accept="application/pdf" multiple style="display:none" onchange="hrUploadCourseFile(${h.id},${i},this)">
             </label>
             <button class="btn btn-d btn-xs" onclick="hrRemoveCourse(${h.id},${i})"><i class="fas fa-times"></i></button>
           </div>
-          ${cf.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${cf.map(f=>`<div class="fi2" style="cursor:pointer" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','pdf')">${ficon('pdf')}<span class="fn" style="max-width:180px">${escHtml(f.name)}</span></div>`).join('')}</div>`:''}
+          ${cf.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${cf.map(f=>`<div class="fi2" style="cursor:pointer;background:#fff" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','pdf')">${ficon('pdf')}<span class="fn" style="max-width:180px">${escHtml(f.name)}</span></div>`).join('')}</div>`:''}
         </div>`;
       }).join(''):'<div style="color:var(--g400);font-size:12px">No courses yet.</div>'}
     </div>
