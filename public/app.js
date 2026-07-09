@@ -1773,6 +1773,16 @@ function nodeDeputy(h){
 }
 function showHrList(kind){_hrView={mode:'list',kind};_renderHrList(kind);}
 function openHrListWindow(kind){showHrList(kind);} // legacy alias
+function _loadHrOrder(){try{return JSON.parse(localStorage.getItem('hrOrder')||'[]');}catch(_){return [];}}
+function _saveHrOrder(){try{localStorage.setItem('hrOrder',JSON.stringify(hrList.map(h=>h.id)));}catch(_){}}
+function _applyHrOrder(){const ord=_loadHrOrder();if(!ord.length)return;const pos={};ord.forEach((id,i)=>pos[id]=i);hrList.sort((a,b)=>{const pa=pos[a.id]??999999,pb=pos[b.id]??999999;return pa-pb;});}
+function hrReorder(id,dir){
+  if(!CU||CU.role!=='admin')return;
+  const i=hrList.findIndex(h=>h.id===id);if(i<0)return;
+  const j=i+dir;if(j<0||j>=hrList.length)return;
+  const tmp=hrList[i];hrList[i]=hrList[j];hrList[j]=tmp;
+  _saveHrOrder();refHr();
+}
 function _renderHrList(kind){
   let list=hrList;let title='All Employees';let ic='fa-users';let color='#3b82f6';
   if(kind==='gov'){list=hrList.filter(h=>(h.empType||'gov')==='gov');title='Government Officials';ic='fa-user-tie';color='#10b981';}
