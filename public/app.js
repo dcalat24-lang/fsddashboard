@@ -1672,15 +1672,24 @@ function renderHr(el){
 function backToHrDash(){_hrView={mode:'dashboard'};refHr();}
 let _hrListOpen=false;
 function toggleHrList(){_hrListOpen=!_hrListOpen;refHr();}
+function _loadHrOrg(){try{return JSON.parse(localStorage.getItem('hrOrg')||'{}')||{};}catch(_){return {};}}
+function _saveHrOrg(m){try{localStorage.setItem('hrOrg',JSON.stringify(m||{}));}catch(_){}}
+function _hrOrgOf(h){const m=_loadHrOrg();return m[h.id]||null;}
 function _empDeptGroup(h){
+  const ov=_hrOrgOf(h);if(ov&&ov.group)return ov.group;
   const p=((h.position||'')+' '+(h.department||'')).toUpperCase();
   if(/PEL/.test(p))return 'PEL';
   if(/OPS|OPERATION/.test(p))return 'OPS';
   if(/AIR|AIRWORTH/.test(p))return 'AIR';
   return 'OTHER';
 }
-function _isHead(h){return /HEAD|CHIEF|DIRECTOR/i.test(h.position||'')&&!/DEPUTY|VICE|ACTING/i.test(h.position||'');}
-function _isDeputy(h){return /DEPUTY|VICE|ACTING HEAD/i.test(h.position||'');}
+function _isHead(h){const ov=_hrOrgOf(h);if(ov&&ov.role)return ov.role==='head';return /HEAD|CHIEF|DIRECTOR/i.test(h.position||'')&&!/DEPUTY|VICE|ACTING/i.test(h.position||'');}
+function _isDeputy(h){const ov=_hrOrgOf(h);if(ov&&ov.role)return ov.role==='deputy';return /DEPUTY|VICE|ACTING HEAD/i.test(h.position||'');}
+function hrOrgSet(id,role,group){if(!CU||CU.role!=='admin')return;const m=_loadHrOrg();m[id]={role:role||null,group:group||null};_saveHrOrg(m);refHr();}
+function hrOrgReset(id){if(!CU||CU.role!=='admin')return;const m=_loadHrOrg();delete m[id];_saveHrOrg(m);refHr();}
+function _onOrgDragStart(ev,id){ev.dataTransfer.setData('text/hr-id',String(id));ev.dataTransfer.effectAllowed='move';}
+function _onOrgDragOver(ev){if(!CU||CU.role!=='admin')return;ev.preventDefault();ev.dataTransfer.dropEffect='move';}
+function _onOrgDrop(ev,role,group){if(!CU||CU.role!=='admin')return;ev.preventDefault();const id=Number(ev.dataTransfer.getData('text/hr-id'));if(!id)return;hrOrgSet(id,role,group);}
 function refHr(){
   if(_hrView.mode==='list')return _renderHrList(_hrView.kind);
   _renderHrDashboard();
