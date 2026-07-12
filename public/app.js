@@ -2022,13 +2022,13 @@ function openHrDetail(id){
       ${courses.length?courses.map((c,i)=>{
         const cf=Array.isArray(c.files)?c.files:[];
         const st=c.status||'planned';
-        const stMap={planned:{bg:'#fee2e2',bd:'#ef4444',fg:'#991b1b',label:'Planned'},in_progress:{bg:'#fef9c3',bd:'#eab308',fg:'#854d0e',label:'In Progress'},passed:{bg:'#dcfce7',bd:'#22c55e',fg:'#166534',label:'Passed'}};
+        const stMap={planned:{bd:'#ef4444',label:'Planned'},in_progress:{bd:'#eab308',label:'In Progress'},passed:{bd:'#22c55e',label:'Passed'}};
         const s=stMap[st]||stMap.planned;
-        return `<div style="border:1px solid ${s.bd};background:${s.bg};border-radius:8px;padding:10px 12px;margin-bottom:6px">
+        return `<div style="border:1px solid var(--g200);background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:6px">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <span style="flex:1;min-width:180px;font-size:13px;color:${s.fg}"><strong>${escHtml(c.name)}</strong> <span style="opacity:.75;font-size:11.5px">${escHtml(c.date||'')}</span></span>
+            <span style="flex:1;min-width:180px;font-size:13px;color:var(--g900)"><strong>${escHtml(c.name)}</strong> <span style="color:var(--g500);font-size:11.5px">${escHtml(c.date||'')}</span></span>
             <span style="background:${s.bd};color:#fff;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px">${s.label}</span>
-            <select onchange="hrSetCourseStatus(${h.id},${i},this.value)" style="font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid ${s.bd};background:#fff;color:${s.fg};font-weight:600">
+            <select onchange="hrSetCourseStatus(${h.id},${i},this.value)" style="font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid var(--g300);background:#fff;color:var(--g700);font-weight:600">
               <option value="planned" ${st==='planned'?'selected':''}>Planned</option>
               <option value="in_progress" ${st==='in_progress'?'selected':''}>In Progress</option>
               <option value="passed" ${st==='passed'?'selected':''}>Passed</option>
