@@ -423,7 +423,7 @@
         </div>
       </div>
       <div class="fr c2">
-        <div class="ff"><label>Date of Birth</label><input id="hBirth" type="date" onchange="hrCalcAge()"></div>
+        <div class="ff"><label>Date of Birth (DD/MM/YYYY)</label><input id="hBirth" type="text" placeholder="DD/MM/YYYY" maxlength="10" oninput="hrDateMask(this)" onblur="hrCalcAge()"></div>
         <div class="ff"><label>Age</label><input id="hAge" placeholder="Auto-calculated" readonly></div>
       </div>
       <div class="fr c2">
