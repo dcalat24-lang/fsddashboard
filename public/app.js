@@ -647,15 +647,18 @@ function toggleNotes(id){
 function noteHistoryRow(d,colspan){
   const list=Array.isArray(d.statusNotes)?d.statusNotes:[];
   if(!list.length) return '';
-  const rows=[...list].reverse().map(n=>{
+  const isAdmin=CU&&CU.role==='admin';
+  const rows=list.map((n,origIdx)=>({n,origIdx})).reverse().map(({n,origIdx})=>{
     const sm=SM[n.status]||SM.head;
     const when=n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    const adm=isAdmin?`<div style="display:flex;gap:4px;flex-shrink:0"><button class="btn btn-ol btn-xs" title="Edit" onclick="docNoteEdit(${d.id},${origIdx})"><i class="fas fa-pen"></i></button><button class="btn btn-d btn-xs" title="Delete" onclick="docNoteDel(${d.id},${origIdx})"><i class="fas fa-trash"></i></button></div>`:'';
     return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-left:3px solid ${sm.color};background:#fff;border-radius:6px;margin-bottom:6px">
       <span class="badge ${sm.cls}" style="flex-shrink:0"><i class="fas ${sm.icon}"></i> ${sm.label}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:12.5px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${n.note||'<em style="color:var(--g400)">(no note)</em>'}</div>
         <div style="font-size:10.5px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${when}${n.by?' · '+n.by:''}</div>
       </div>
+      ${adm}
     </div>`;
   }).join('');
   return `<tr id="nh-${d.id}" style="display:none"><td colspan="${colspan}" style="background:var(--g50);padding:10px 14px">
@@ -666,21 +669,45 @@ function noteHistoryRow(d,colspan){
 function trackNoteHistory(d){
   const list=Array.isArray(d.statusNotes)?d.statusNotes:[];
   if(!list.length) return '';
-  const rows=[...list].reverse().map(n=>{
+  const isAdmin=CU&&CU.role==='admin';
+  const rows=list.map((n,origIdx)=>({n,origIdx})).reverse().map(({n,origIdx})=>{
     const sm=SM[n.status]||SM.head;
     const when=n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    const adm=isAdmin?`<div style="display:flex;gap:4px;flex-shrink:0"><button class="btn btn-ol btn-xs" title="Edit" onclick="docNoteEdit(${d.id},${origIdx})"><i class="fas fa-pen"></i></button><button class="btn btn-d btn-xs" title="Delete" onclick="docNoteDel(${d.id},${origIdx})"><i class="fas fa-trash"></i></button></div>`:'';
     return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-left:3px solid ${sm.color};background:#fff;border-radius:6px;margin-bottom:6px">
       <span class="badge ${sm.cls}" style="flex-shrink:0"><i class="fas ${sm.icon}"></i> ${sm.label}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:12.5px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${n.note||'<em style="color:var(--g400)">(no note)</em>'}</div>
         <div style="font-size:10.5px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${when}${n.by?' · '+n.by:''}</div>
       </div>
+      ${adm}
     </div>`;
   }).join('');
   return `<div style="margin-top:10px;background:var(--g50);padding:10px;border-radius:var(--r)">
     <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-history"></i> Note History (${list.length})</div>
     ${rows}
   </div>`;
+}
+async function docNoteEdit(id,idx){
+  if(!CU||CU.role!=='admin')return;
+  const d=DB.docs.find(x=>x.id===id);if(!d||!Array.isArray(d.statusNotes)||!d.statusNotes[idx])return;
+  const cur=d.statusNotes[idx];
+  const r=await Swal.fire({title:'Edit Note',input:'textarea',inputValue:cur.note||'',showCancelButton:true,confirmButtonColor:'var(--p)'});
+  if(!r.isConfirmed)return;
+  cur.note=r.value||'';cur.editedAt=new Date().toISOString();cur.editedBy=(CU&&CU.name)||'';
+  if(GAS_URL)await gasPost({action:'saveDocument',doc:d});
+  refDocs&&refDocs();const o=document.getElementById('moDetail');if(o&&o.classList.contains('open')&&typeof openDetail==='function'){/* re-render if function exists */}
+  Swal.fire({icon:'success',title:'Updated',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
+}
+async function docNoteDel(id,idx){
+  if(!CU||CU.role!=='admin')return;
+  const r=await Swal.fire({title:'Delete this note?',icon:'warning',showCancelButton:true,confirmButtonColor:'var(--rd)'});
+  if(!r.isConfirmed)return;
+  const d=DB.docs.find(x=>x.id===id);if(!d||!Array.isArray(d.statusNotes))return;
+  d.statusNotes.splice(idx,1);
+  if(GAS_URL)await gasPost({action:'saveDocument',doc:d});
+  refDocs&&refDocs();
+  Swal.fire({icon:'success',title:'Deleted',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
 }
 function noteToggleBtn(d){
   const n=(Array.isArray(d.statusNotes)?d.statusNotes.length:0);
@@ -1546,8 +1573,9 @@ function _renderAocPhase(id,key){
   const filesHtml=files.length?files.map((f,i)=>`<div class="fi2" style="cursor:pointer" onclick="viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','${f.type||gType(f.name)}')">${ficon(f.type||gType(f.name))}<span class="fn" style="max-width:220px">${escHtml(f.name)}</span><button onclick="event.stopPropagation();aocRemoveFile(${id},'${key}',${i})" style="background:none;border:none;color:var(--rd);cursor:pointer"><i class="fas fa-times"></i></button></div>`).join(''):'<div style="color:var(--g400);font-size:12px">No files yet.</div>';
   const docs=(ph.docIds||[]);
   const docsHtml=docs.length?docs.map(did=>{const d=DB.docs.find(x=>x.id===did);if(!d)return '';const df=(d.files||[]);const fileChips=df.length?df.map(f=>`<span onclick="event.stopPropagation();viewFile('${escHtml(f.name)}','${encodeURIComponent(f.url||'')}','${f.type||gType(f.name)}')" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--g200);border-radius:6px;padding:3px 8px;font-size:11px;margin-right:4px" title="Open ${escHtml(f.name)}">${ficon(f.type||gType(f.name))}<span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.name)}</span></span>`).join(''):'<span style="color:var(--g400);font-size:11px">(no files on this document)</span>';return `<div style="padding:10px 12px;background:#f8fafc;border-left:3px solid ${p.color};border-radius:6px;margin-bottom:6px"><div style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><code style="font-size:11px;color:var(--g600)">${escHtml(d.fsdNo||'')}</code> — <strong>${escHtml(d.subject||'')}</strong></div><button class="btn btn-ol btn-xs" onclick="event.stopPropagation();dlDoc(${did})" title="Open document"><i class="fas fa-external-link-alt"></i></button><button class="btn btn-d btn-xs" onclick="event.stopPropagation();aocRemovePhaseDoc(${id},'${key}',${did})"><i class="fas fa-times"></i></button></div><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${fileChips}</div></div>`;}).join(''):'<div style="color:var(--g400);font-size:12px">No attached documents.</div>';
-  const notes=(ph.notes||[]).slice().reverse();
-  const notesHtml=notes.length?notes.map(n=>`<div style="padding:10px 12px;background:#fff;border-left:3px solid ${p.color};border-radius:6px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.04)"><div style="white-space:pre-wrap;font-size:13px">${escHtml(n.text||'')}</div><div style="font-size:11px;color:var(--g500);margin-top:4px"><i class="far fa-clock"></i> ${n.at?new Date(n.at).toLocaleString('en-GB'):''}${n.by?' · '+escHtml(n.by):''}</div></div>`).join(''):'<div style="color:var(--g400);font-size:12px">No notes yet.</div>';
+  const isAdm=CU&&CU.role==='admin';
+  const notesArr=(ph.notes||[]);
+  const notesHtml=notesArr.length?notesArr.map((n,origIdx)=>({n,origIdx})).reverse().map(({n,origIdx})=>{const adm=isAdm?`<div style="display:flex;gap:4px;margin-top:6px"><button class="btn btn-ol btn-xs" onclick="aocNoteEdit(${id},'${key}',${origIdx})"><i class="fas fa-pen"></i> Edit</button><button class="btn btn-d btn-xs" onclick="aocNoteDel(${id},'${key}',${origIdx})"><i class="fas fa-trash"></i> Delete</button></div>`:'';return `<div style="padding:10px 12px;background:#fff;border-left:3px solid ${p.color};border-radius:6px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.04)"><div style="white-space:pre-wrap;font-size:13px">${escHtml(n.text||'')}</div><div style="font-size:11px;color:var(--g500);margin-top:4px"><i class="far fa-clock"></i> ${n.at?new Date(n.at).toLocaleString('en-GB'):''}${n.by?' · '+escHtml(n.by):''}</div>${adm}</div>`;}).join(''):'<div style="color:var(--g400);font-size:12px">No notes yet.</div>';
   body.innerHTML=`
     <div style="background:linear-gradient(135deg,${p.color},${p.color}cc);color:#fff;border-radius:12px;padding:20px 24px;margin-bottom:16px">
       <div style="font-size:20px;font-weight:700"><i class="fas ${p.icon}"></i> ${p.label}</div>
@@ -1625,6 +1653,24 @@ function aocSavePhaseNote(id,key){
   aocPersist(a);refAoc();
   Swal.fire({icon:'success',title:'Note saved',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
 }
+async function aocNoteEdit(id,key,idx){
+  if(!CU||CU.role!=='admin')return;
+  const a=aocList.find(x=>x.id===id);const n=a?.phases?.[key]?.notes?.[idx];if(!n)return;
+  const r=await Swal.fire({title:'Edit Note',input:'textarea',inputValue:n.text||'',showCancelButton:true,confirmButtonColor:'var(--p)'});
+  if(!r.isConfirmed)return;
+  n.text=r.value||'';n.editedAt=Date.now();n.editedBy=CU?.name||'';
+  await aocPersist(a);refAoc();
+  Swal.fire({icon:'success',title:'Updated',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
+}
+async function aocNoteDel(id,key,idx){
+  if(!CU||CU.role!=='admin')return;
+  const r=await Swal.fire({title:'Delete this note?',icon:'warning',showCancelButton:true,confirmButtonColor:'var(--rd)'});
+  if(!r.isConfirmed)return;
+  const a=aocList.find(x=>x.id===id);if(!a?.phases?.[key]?.notes)return;
+  a.phases[key].notes.splice(idx,1);
+  await aocPersist(a);refAoc();
+  Swal.fire({icon:'success',title:'Deleted',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
+}
 function openAocDocSearch(aocId,phaseKey){_aocDocTarget={aocId,phaseKey};document.getElementById('aocDocSrch').value='';refAocDocSearch();openMo('moAocDoc');}
 function refAocDocSearch(){
   const q=(v('aocDocSrch')||'').toLowerCase();
@@ -1672,15 +1718,24 @@ function renderHr(el){
 function backToHrDash(){_hrView={mode:'dashboard'};refHr();}
 let _hrListOpen=false;
 function toggleHrList(){_hrListOpen=!_hrListOpen;refHr();}
+function _loadHrOrg(){try{return JSON.parse(localStorage.getItem('hrOrg')||'{}')||{};}catch(_){return {};}}
+function _saveHrOrg(m){try{localStorage.setItem('hrOrg',JSON.stringify(m||{}));}catch(_){}}
+function _hrOrgOf(h){const m=_loadHrOrg();return m[h.id]||null;}
 function _empDeptGroup(h){
+  const ov=_hrOrgOf(h);if(ov&&ov.group)return ov.group;
   const p=((h.position||'')+' '+(h.department||'')).toUpperCase();
   if(/PEL/.test(p))return 'PEL';
   if(/OPS|OPERATION/.test(p))return 'OPS';
   if(/AIR|AIRWORTH/.test(p))return 'AIR';
   return 'OTHER';
 }
-function _isHead(h){return /HEAD|CHIEF|DIRECTOR/i.test(h.position||'')&&!/DEPUTY|VICE|ACTING/i.test(h.position||'');}
-function _isDeputy(h){return /DEPUTY|VICE|ACTING HEAD/i.test(h.position||'');}
+function _isHead(h){const ov=_hrOrgOf(h);if(ov&&ov.role)return ov.role==='head';return /HEAD|CHIEF|DIRECTOR/i.test(h.position||'')&&!/DEPUTY|VICE|ACTING/i.test(h.position||'');}
+function _isDeputy(h){const ov=_hrOrgOf(h);if(ov&&ov.role)return ov.role==='deputy';return /DEPUTY|VICE|ACTING HEAD/i.test(h.position||'');}
+function hrOrgSet(id,role,group){if(!CU||CU.role!=='admin')return;const m=_loadHrOrg();m[id]={role:role||null,group:group||null};_saveHrOrg(m);refHr();}
+function hrOrgReset(id){if(!CU||CU.role!=='admin')return;const m=_loadHrOrg();delete m[id];_saveHrOrg(m);refHr();}
+function _onOrgDragStart(ev,id){ev.dataTransfer.setData('text/hr-id',String(id));ev.dataTransfer.effectAllowed='move';}
+function _onOrgDragOver(ev){if(!CU||CU.role!=='admin')return;ev.preventDefault();ev.dataTransfer.dropEffect='move';}
+function _onOrgDrop(ev,role,group){if(!CU||CU.role!=='admin')return;ev.preventDefault();const id=Number(ev.dataTransfer.getData('text/hr-id'));if(!id)return;hrOrgSet(id,role,group);}
 function refHr(){
   if(_hrView.mode==='list')return _renderHrList(_hrView.kind);
   _renderHrDashboard();
@@ -1700,10 +1755,12 @@ function _renderHrDashboard(){
   const ops=hrList.filter(h=>_empDeptGroup(h)==='OPS'&&!_isHead(h)&&!_isDeputy(h));
   const air=hrList.filter(h=>_empDeptGroup(h)==='AIR'&&!_isHead(h)&&!_isDeputy(h));
 
+  const isAdmin=CU&&CU.role==='admin';
+  const dnd=(h)=>isAdmin?` draggable="true" ondragstart="_onOrgDragStart(event,${h.id})" title="Drag to move"`:'';
   const nodeSm=(h)=>{const av=h.photo?`<img src="${h.photo}" style="width:34px;height:34px;border-radius:50%;object-fit:cover">`:`<div style="width:34px;height:34px;border-radius:50%;background:var(--g100);color:var(--g600);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">${initials(h.name)}</div>`;
-    return `<div onclick="openHrDetail(${h.id})" style="display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--g200);border-radius:6px;background:#fff;cursor:pointer;margin-bottom:4px">${av}<div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:600;line-height:1.15">${escHtml(h.name)}</div><div style="font-size:10.5px;color:var(--g500);line-height:1.15">${escHtml(h.position||'')}</div></div></div>`;};
+    return `<div${dnd(h)} onclick="openHrDetail(${h.id})" style="display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--g200);border-radius:6px;background:#fff;cursor:${isAdmin?'grab':'pointer'};margin-bottom:4px">${av}<div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:600;line-height:1.15">${escHtml(h.name)}</div><div style="font-size:10.5px;color:var(--g500);line-height:1.15">${escHtml(h.position||'')}</div></div></div>`;};
   const nodeLg=(h)=>{const av=h.photo?`<img src="${h.photo}" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid var(--p)">`:`<div style="width:84px;height:84px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;border:3px solid var(--p)">${initials(h.name)}</div>`;
-    return `<div onclick="openHrDetail(${h.id})" style="text-align:center;cursor:pointer;padding:12px 16px;border:2px solid var(--p);border-radius:12px;background:linear-gradient(135deg,#fff,#f0f7ff);min-width:180px">${av}<div style="font-size:14px;font-weight:700;margin-top:8px">${escHtml(h.name)}</div><div style="font-size:11.5px;color:var(--g600)">${escHtml(h.position||'')}</div></div>`;};
+    return `<div${dnd(h)} onclick="openHrDetail(${h.id})" style="text-align:center;cursor:${isAdmin?'grab':'pointer'};padding:12px 16px;border:2px solid var(--p);border-radius:12px;background:linear-gradient(135deg,#fff,#f0f7ff);min-width:180px">${av}<div style="font-size:14px;font-weight:700;margin-top:8px">${escHtml(h.name)}</div><div style="font-size:11.5px;color:var(--g600)">${escHtml(h.position||'')}</div></div>`;};
 
   body.innerHTML=`
     <!-- Stat Boxes -->
@@ -1741,14 +1798,19 @@ function _renderHrDashboard(){
       </div>
       <div style="border:1px solid var(--g200);border-radius:10px;background:#fff;padding:16px;max-height:640px;overflow:auto">
         <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--g700);text-align:center"><i class="fas fa-sitemap" style="color:var(--p)"></i> Department Structure</h4>
-        ${heads.length?`<div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">${heads.map(nodeLg).join('')}</div>`:'<div style="color:var(--g400);font-size:12px;text-align:center;margin-bottom:12px">No Head assigned</div>'}
-        ${deputies.length?`<div style="display:flex;justify-content:center;align-items:center;margin:6px 0"><div style="width:2px;height:14px;background:var(--g300)"></div></div>`:''}
-        <div style="font-size:11px;color:var(--g500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;text-align:center"><i class="fas fa-user-shield"></i> Deputies (${deputies.length})</div>
-        <div style="display:flex;justify-content:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">${deputies.length?deputies.map(nodeDeputy).join(''):'<div style="color:var(--g400);font-size:12px">None</div>'}</div>
+        ${isAdmin?`<div style="font-size:10.5px;color:var(--g500);text-align:center;margin-bottom:8px;background:#f8fafc;border:1px dashed var(--g300);border-radius:6px;padding:4px 6px"><i class="fas fa-hand-pointer"></i> Admin: drag employees between zones to reassign</div>`:''}
+        <div ondragover="_onOrgDragOver(event)" ondrop="_onOrgDrop(event,'head',null)" style="min-height:${heads.length?'auto':'60px'};border:${isAdmin?'2px dashed var(--g300)':'none'};border-radius:10px;padding:${isAdmin?'8px':'0'};margin-bottom:10px">
+          <div style="font-size:10.5px;color:var(--g500);text-align:center;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Head</div>
+          ${heads.length?`<div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">${heads.map(nodeLg).join('')}</div>`:'<div style="color:var(--g400);font-size:12px;text-align:center">Drop here to set as Head</div>'}
+        </div>
+        <div ondragover="_onOrgDragOver(event)" ondrop="_onOrgDrop(event,'deputy',null)" style="border:${isAdmin?'2px dashed var(--g300)':'none'};border-radius:10px;padding:${isAdmin?'8px':'0'};margin-bottom:14px">
+          <div style="font-size:11px;color:var(--g500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;text-align:center"><i class="fas fa-user-shield"></i> Deputies (${deputies.length})</div>
+          <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">${deputies.length?deputies.map(nodeDeputy).join(''):'<div style="color:var(--g400);font-size:12px">Drop here to set as Deputy</div>'}</div>
+        </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-          <div><div style="text-align:center;background:#dbeafe;color:#1e40af;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">PEL (${pel.length})</div>${pel.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
-          <div><div style="text-align:center;background:#dcfce7;color:#166534;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">OPS (${ops.length})</div>${ops.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
-          <div><div style="text-align:center;background:#fef3c7;color:#92400e;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">AIR (${air.length})</div>${air.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
+          <div ondragover="_onOrgDragOver(event)" ondrop="_onOrgDrop(event,'member','PEL')" style="border:${isAdmin?'2px dashed #93c5fd':'none'};border-radius:8px;padding:${isAdmin?'6px':'0'};min-height:80px"><div style="text-align:center;background:#dbeafe;color:#1e40af;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">PEL (${pel.length})</div>${pel.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
+          <div ondragover="_onOrgDragOver(event)" ondrop="_onOrgDrop(event,'member','OPS')" style="border:${isAdmin?'2px dashed #86efac':'none'};border-radius:8px;padding:${isAdmin?'6px':'0'};min-height:80px"><div style="text-align:center;background:#dcfce7;color:#166534;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">OPS (${ops.length})</div>${ops.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
+          <div ondragover="_onOrgDragOver(event)" ondrop="_onOrgDrop(event,'member','AIR')" style="border:${isAdmin?'2px dashed #fcd34d':'none'};border-radius:8px;padding:${isAdmin?'6px':'0'};min-height:80px"><div style="text-align:center;background:#fef3c7;color:#92400e;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">AIR (${air.length})</div>${air.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
         </div>
       </div>
     </div>`;
@@ -1768,8 +1830,10 @@ function _renderHrDashboard(){
   },50);
 }
 function nodeDeputy(h){
+  const isAdmin=CU&&CU.role==='admin';
+  const drag=isAdmin?` draggable="true" ondragstart="_onOrgDragStart(event,${h.id})" title="Drag to move"`:'';
   const av=h.photo?`<img src="${h.photo}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--p)">`:`<div style="width:64px;height:64px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700">${initials(h.name)}</div>`;
-  return `<div onclick="openHrDetail(${h.id})" style="min-width:120px;text-align:center;cursor:pointer;padding:8px;border:1px solid var(--g200);border-radius:8px;background:#fff;flex-shrink:0"><div style="display:flex;justify-content:center">${av}</div><div style="font-size:11.5px;font-weight:600;margin-top:6px;line-height:1.2">${escHtml(h.name)}</div><div style="font-size:10px;color:var(--g500);margin-top:2px;line-height:1.15">${escHtml(h.position||'')}</div></div>`;
+  return `<div${drag} onclick="openHrDetail(${h.id})" style="min-width:120px;text-align:center;cursor:${isAdmin?'grab':'pointer'};padding:8px;border:1px solid var(--g200);border-radius:8px;background:#fff;flex-shrink:0"><div style="display:flex;justify-content:center">${av}</div><div style="font-size:11.5px;font-weight:600;margin-top:6px;line-height:1.2">${escHtml(h.name)}</div><div style="font-size:10px;color:var(--g500);margin-top:2px;line-height:1.15">${escHtml(h.position||'')}</div></div>`;
 }
 function showHrList(kind){_hrView={mode:'list',kind};_renderHrList(kind);}
 function openHrListWindow(kind){showHrList(kind);} // legacy alias
@@ -1827,8 +1891,11 @@ function clearHrPhoto(){_hrPhoto='';const p=document.getElementById('hPhoto');if
 function setHrPhotoPreview(d){_hrPhoto=d||'';const row=document.getElementById('hPhotoRow');if(!d){if(row)row.style.display='none';return;}document.getElementById('hPhotoPrev').src=d;row.style.display='';}
 function onHrPhoto(e){const f=e.target.files&&e.target.files[0];if(!f)return;resizeImageToDataUrl(f,256).then(setHrPhotoPreview);}
 function _yearsBetween(iso){if(!iso)return '';const b=new Date(iso);if(isNaN(b))return '';const n=new Date();let a=n.getFullYear()-b.getFullYear();const m=n.getMonth()-b.getMonth();if(m<0||(m===0&&n.getDate()<b.getDate()))a--;return a>=0?a+' years':'';}
-function hrCalcAge(){document.getElementById('hAge').value=_yearsBetween(v('hBirth'));}
-function hrCalcTenure(){document.getElementById('hTenure').value=_yearsBetween(v('hStart'));}
+function _ddmmToIso(s){if(!s)return '';const m=String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return '';return `${m[3]}-${m[2]}-${m[1]}`;}
+function _isoToDdmm(s){if(!s)return '';const m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);if(!m)return s.match(/^\d{2}\/\d{2}\/\d{4}$/)?s:'';return `${m[3]}/${m[2]}/${m[1]}`;}
+function hrDateMask(el){let v=(el.value||'').replace(/[^\d]/g,'').slice(0,8);if(v.length>=5)v=v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4);else if(v.length>=3)v=v.slice(0,2)+'/'+v.slice(2);el.value=v;}
+function hrCalcAge(){document.getElementById('hAge').value=_yearsBetween(_ddmmToIso(v('hBirth')));}
+function hrCalcTenure(){document.getElementById('hTenure').value=_yearsBetween(_ddmmToIso(v('hStart')));}
 let _hrCertFiles=[];
 function renderHrCertList(){
   const box=document.getElementById('hCertList');if(!box)return;
@@ -1864,11 +1931,11 @@ function openEditHr(id){
   document.getElementById('hLast').value=ln;
   document.getElementById('hPos').value=h.position||'';
   document.getElementById('hDept').value=h.department||'';
-  document.getElementById('hBirth').value=h.birthDate||'';
+  document.getElementById('hBirth').value=_isoToDdmm(h.birthDate||'');
   document.getElementById('hPhone').value=h.phone||'';
   document.getElementById('hEmail').value=h.email||'';
   document.getElementById('hAddr').value=h.address||'';
-  document.getElementById('hStart').value=h.startDate||'';
+  document.getElementById('hStart').value=_isoToDdmm(h.startDate||'');
   const edu=(Array.isArray(h.education)&&h.education[0])||{};
   document.getElementById('hEduLvl').value=edu.level||'';
   document.getElementById('hEduYear').value=edu.year||'';
@@ -1894,8 +1961,8 @@ async function saveHrEmployee(){
   const payload={
     name,firstName:fn,lastName:ln,
     position:v('hPos').trim(),department:v('hDept').trim(),
-    birthDate:v('hBirth')||'',address:v('hAddr').trim(),
-    startDate:v('hStart')||'',
+    birthDate:_ddmmToIso(v('hBirth'))||'',address:v('hAddr').trim(),
+    startDate:_ddmmToIso(v('hStart'))||'',
     email:v('hEmail').trim(),phone:v('hPhone').trim(),
     bio:v('hBio').trim(),photo:_hrPhoto||'',
     education,certFiles:_hrCertFiles,
@@ -1980,11 +2047,11 @@ function openHrDetail(id){
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px">
       ${info('First Name',escHtml(h.firstName||''),'fa-user','#3b82f6')}
       ${info('Last Name',escHtml(h.lastName||''),'fa-user','#3b82f6')}
-      ${info('Date of Birth',h.birthDate||'','fa-birthday-cake','#ec4899')}
+      ${info('Date of Birth',_isoToDdmm(h.birthDate||''),'fa-birthday-cake','#ec4899')}
       ${info('Age',_yearsBetween(h.birthDate),'fa-hourglass-half','#ec4899')}
       ${info('Phone',escHtml(h.phone||''),'fa-phone','#10b981')}
       ${info('Email',escHtml(h.email||''),'fa-envelope','#10b981')}
-      ${info('Start Date',h.startDate||'','fa-calendar-plus','#8b5cf6')}
+      ${info('Start Date',_isoToDdmm(h.startDate||''),'fa-calendar-plus','#8b5cf6')}
       ${info('Years of Service',_yearsBetween(h.startDate),'fa-briefcase','#8b5cf6')}
     </div>
     <div style="margin-bottom:14px">${info('Current Address',escHtml(h.address||'').replace(/\n/g,'<br>'),'fa-map-marker-alt','#f59e0b')}</div>
@@ -2022,13 +2089,13 @@ function openHrDetail(id){
       ${courses.length?courses.map((c,i)=>{
         const cf=Array.isArray(c.files)?c.files:[];
         const st=c.status||'planned';
-        const stMap={planned:{bg:'#fee2e2',bd:'#ef4444',fg:'#991b1b',label:'Planned'},in_progress:{bg:'#fef9c3',bd:'#eab308',fg:'#854d0e',label:'In Progress'},passed:{bg:'#dcfce7',bd:'#22c55e',fg:'#166534',label:'Passed'}};
+        const stMap={planned:{bd:'#ef4444',label:'Planned'},in_progress:{bd:'#eab308',label:'In Progress'},passed:{bd:'#22c55e',label:'Passed'}};
         const s=stMap[st]||stMap.planned;
-        return `<div style="border:1px solid ${s.bd};background:${s.bg};border-radius:8px;padding:10px 12px;margin-bottom:6px">
+        return `<div style="border:1px solid var(--g200);background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:6px">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <span style="flex:1;min-width:180px;font-size:13px;color:${s.fg}"><strong>${escHtml(c.name)}</strong> <span style="opacity:.75;font-size:11.5px">${escHtml(c.date||'')}</span></span>
+            <span style="flex:1;min-width:180px;font-size:13px;color:var(--g900)"><strong>${escHtml(c.name)}</strong> <span style="color:var(--g500);font-size:11.5px">${escHtml(c.date||'')}</span></span>
             <span style="background:${s.bd};color:#fff;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px">${s.label}</span>
-            <select onchange="hrSetCourseStatus(${h.id},${i},this.value)" style="font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid ${s.bd};background:#fff;color:${s.fg};font-weight:600">
+            <select onchange="hrSetCourseStatus(${h.id},${i},this.value)" style="font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid var(--g300);background:#fff;color:var(--g700);font-weight:600">
               <option value="planned" ${st==='planned'?'selected':''}>Planned</option>
               <option value="in_progress" ${st==='in_progress'?'selected':''}>In Progress</option>
               <option value="passed" ${st==='passed'?'selected':''}>Passed</option>

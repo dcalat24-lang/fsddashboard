@@ -423,7 +423,7 @@
         </div>
       </div>
       <div class="fr c2">
-        <div class="ff"><label>Date of Birth</label><input id="hBirth" type="date" onchange="hrCalcAge()"></div>
+        <div class="ff"><label>Date of Birth (DD/MM/YYYY)</label><input id="hBirth" type="text" placeholder="DD/MM/YYYY" maxlength="10" oninput="hrDateMask(this)" onblur="hrCalcAge()"></div>
         <div class="ff"><label>Age</label><input id="hAge" placeholder="Auto-calculated" readonly></div>
       </div>
       <div class="fr c2">
@@ -432,7 +432,7 @@
       </div>
       <div class="fr"><div class="ff"><label>Current Address</label><textarea id="hAddr" placeholder="Full address..." style="min-height:60px"></textarea></div></div>
       <div class="fr c2">
-        <div class="ff"><label>Start Date (Employment)</label><input id="hStart" type="date" onchange="hrCalcTenure()"></div>
+        <div class="ff"><label>Start Date (Employment) (DD/MM/YYYY)</label><input id="hStart" type="text" placeholder="DD/MM/YYYY" maxlength="10" oninput="hrDateMask(this)" onblur="hrCalcTenure()"></div>
         <div class="ff"><label>Years of Service</label><input id="hTenure" placeholder="Auto-calculated" readonly></div>
       </div>
       <div class="fr c2">
