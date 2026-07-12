@@ -1827,8 +1827,11 @@ function clearHrPhoto(){_hrPhoto='';const p=document.getElementById('hPhoto');if
 function setHrPhotoPreview(d){_hrPhoto=d||'';const row=document.getElementById('hPhotoRow');if(!d){if(row)row.style.display='none';return;}document.getElementById('hPhotoPrev').src=d;row.style.display='';}
 function onHrPhoto(e){const f=e.target.files&&e.target.files[0];if(!f)return;resizeImageToDataUrl(f,256).then(setHrPhotoPreview);}
 function _yearsBetween(iso){if(!iso)return '';const b=new Date(iso);if(isNaN(b))return '';const n=new Date();let a=n.getFullYear()-b.getFullYear();const m=n.getMonth()-b.getMonth();if(m<0||(m===0&&n.getDate()<b.getDate()))a--;return a>=0?a+' years':'';}
-function hrCalcAge(){document.getElementById('hAge').value=_yearsBetween(v('hBirth'));}
-function hrCalcTenure(){document.getElementById('hTenure').value=_yearsBetween(v('hStart'));}
+function _ddmmToIso(s){if(!s)return '';const m=String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return '';return `${m[3]}-${m[2]}-${m[1]}`;}
+function _isoToDdmm(s){if(!s)return '';const m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);if(!m)return s.match(/^\d{2}\/\d{2}\/\d{4}$/)?s:'';return `${m[3]}/${m[2]}/${m[1]}`;}
+function hrDateMask(el){let v=(el.value||'').replace(/[^\d]/g,'').slice(0,8);if(v.length>=5)v=v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4);else if(v.length>=3)v=v.slice(0,2)+'/'+v.slice(2);el.value=v;}
+function hrCalcAge(){document.getElementById('hAge').value=_yearsBetween(_ddmmToIso(v('hBirth')));}
+function hrCalcTenure(){document.getElementById('hTenure').value=_yearsBetween(_ddmmToIso(v('hStart')));}
 let _hrCertFiles=[];
 function renderHrCertList(){
   const box=document.getElementById('hCertList');if(!box)return;
