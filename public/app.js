@@ -1897,8 +1897,8 @@ async function saveHrEmployee(){
   const payload={
     name,firstName:fn,lastName:ln,
     position:v('hPos').trim(),department:v('hDept').trim(),
-    birthDate:v('hBirth')||'',address:v('hAddr').trim(),
-    startDate:v('hStart')||'',
+    birthDate:_ddmmToIso(v('hBirth'))||'',address:v('hAddr').trim(),
+    startDate:_ddmmToIso(v('hStart'))||'',
     email:v('hEmail').trim(),phone:v('hPhone').trim(),
     bio:v('hBio').trim(),photo:_hrPhoto||'',
     education,certFiles:_hrCertFiles,
