@@ -1983,11 +1983,11 @@ function openHrDetail(id){
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px">
       ${info('First Name',escHtml(h.firstName||''),'fa-user','#3b82f6')}
       ${info('Last Name',escHtml(h.lastName||''),'fa-user','#3b82f6')}
-      ${info('Date of Birth',h.birthDate||'','fa-birthday-cake','#ec4899')}
+      ${info('Date of Birth',_isoToDdmm(h.birthDate||''),'fa-birthday-cake','#ec4899')}
       ${info('Age',_yearsBetween(h.birthDate),'fa-hourglass-half','#ec4899')}
       ${info('Phone',escHtml(h.phone||''),'fa-phone','#10b981')}
       ${info('Email',escHtml(h.email||''),'fa-envelope','#10b981')}
-      ${info('Start Date',h.startDate||'','fa-calendar-plus','#8b5cf6')}
+      ${info('Start Date',_isoToDdmm(h.startDate||''),'fa-calendar-plus','#8b5cf6')}
       ${info('Years of Service',_yearsBetween(h.startDate),'fa-briefcase','#8b5cf6')}
     </div>
     <div style="margin-bottom:14px">${info('Current Address',escHtml(h.address||'').replace(/\n/g,'<br>'),'fa-map-marker-alt','#f59e0b')}</div>
