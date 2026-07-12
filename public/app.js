@@ -1784,8 +1784,10 @@ function _renderHrDashboard(){
   },50);
 }
 function nodeDeputy(h){
+  const isAdmin=CU&&CU.role==='admin';
+  const drag=isAdmin?` draggable="true" ondragstart="_onOrgDragStart(event,${h.id})" title="Drag to move"`:'';
   const av=h.photo?`<img src="${h.photo}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--p)">`:`<div style="width:64px;height:64px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700">${initials(h.name)}</div>`;
-  return `<div onclick="openHrDetail(${h.id})" style="min-width:120px;text-align:center;cursor:pointer;padding:8px;border:1px solid var(--g200);border-radius:8px;background:#fff;flex-shrink:0"><div style="display:flex;justify-content:center">${av}</div><div style="font-size:11.5px;font-weight:600;margin-top:6px;line-height:1.2">${escHtml(h.name)}</div><div style="font-size:10px;color:var(--g500);margin-top:2px;line-height:1.15">${escHtml(h.position||'')}</div></div>`;
+  return `<div${drag} onclick="openHrDetail(${h.id})" style="min-width:120px;text-align:center;cursor:${isAdmin?'grab':'pointer'};padding:8px;border:1px solid var(--g200);border-radius:8px;background:#fff;flex-shrink:0"><div style="display:flex;justify-content:center">${av}</div><div style="font-size:11.5px;font-weight:600;margin-top:6px;line-height:1.2">${escHtml(h.name)}</div><div style="font-size:10px;color:var(--g500);margin-top:2px;line-height:1.15">${escHtml(h.position||'')}</div></div>`;
 }
 function showHrList(kind){_hrView={mode:'list',kind};_renderHrList(kind);}
 function openHrListWindow(kind){showHrList(kind);} // legacy alias
