@@ -1752,14 +1752,19 @@ function _renderHrDashboard(){
       </div>
       <div style="border:1px solid var(--g200);border-radius:10px;background:#fff;padding:16px;max-height:640px;overflow:auto">
         <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--g700);text-align:center"><i class="fas fa-sitemap" style="color:var(--p)"></i> Department Structure</h4>
-        ${heads.length?`<div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">${heads.map(nodeLg).join('')}</div>`:'<div style="color:var(--g400);font-size:12px;text-align:center;margin-bottom:12px">No Head assigned</div>'}
-        ${deputies.length?`<div style="display:flex;justify-content:center;align-items:center;margin:6px 0"><div style="width:2px;height:14px;background:var(--g300)"></div></div>`:''}
-        <div style="font-size:11px;color:var(--g500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;text-align:center"><i class="fas fa-user-shield"></i> Deputies (${deputies.length})</div>
-        <div style="display:flex;justify-content:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">${deputies.length?deputies.map(nodeDeputy).join(''):'<div style="color:var(--g400);font-size:12px">None</div>'}</div>
+        ${isAdmin?`<div style="font-size:10.5px;color:var(--g500);text-align:center;margin-bottom:8px;background:#f8fafc;border:1px dashed var(--g300);border-radius:6px;padding:4px 6px"><i class="fas fa-hand-pointer"></i> Admin: drag employees between zones to reassign</div>`:''}
+        <div ondragover="_onOrgDragOver(event)" ondrop="_onOrgDrop(event,'head',null)" style="min-height:${heads.length?'auto':'60px'};border:${isAdmin?'2px dashed var(--g300)':'none'};border-radius:10px;padding:${isAdmin?'8px':'0'};margin-bottom:10px">
+          <div style="font-size:10.5px;color:var(--g500);text-align:center;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Head</div>
+          ${heads.length?`<div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">${heads.map(nodeLg).join('')}</div>`:'<div style="color:var(--g400);font-size:12px;text-align:center">Drop here to set as Head</div>'}
+        </div>
+        <div ondragover="_onOrgDragOver(event)" ondrop="_onOrgDrop(event,'deputy',null)" style="border:${isAdmin?'2px dashed var(--g300)':'none'};border-radius:10px;padding:${isAdmin?'8px':'0'};margin-bottom:14px">
+          <div style="font-size:11px;color:var(--g500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;text-align:center"><i class="fas fa-user-shield"></i> Deputies (${deputies.length})</div>
+          <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">${deputies.length?deputies.map(nodeDeputy).join(''):'<div style="color:var(--g400);font-size:12px">Drop here to set as Deputy</div>'}</div>
+        </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-          <div><div style="text-align:center;background:#dbeafe;color:#1e40af;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">PEL (${pel.length})</div>${pel.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
-          <div><div style="text-align:center;background:#dcfce7;color:#166534;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">OPS (${ops.length})</div>${ops.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
-          <div><div style="text-align:center;background:#fef3c7;color:#92400e;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">AIR (${air.length})</div>${air.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
+          <div ondragover="_onOrgDragOver(event)" ondrop="_onOrgDrop(event,'member','PEL')" style="border:${isAdmin?'2px dashed #93c5fd':'none'};border-radius:8px;padding:${isAdmin?'6px':'0'};min-height:80px"><div style="text-align:center;background:#dbeafe;color:#1e40af;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">PEL (${pel.length})</div>${pel.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
+          <div ondragover="_onOrgDragOver(event)" ondrop="_onOrgDrop(event,'member','OPS')" style="border:${isAdmin?'2px dashed #86efac':'none'};border-radius:8px;padding:${isAdmin?'6px':'0'};min-height:80px"><div style="text-align:center;background:#dcfce7;color:#166534;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">OPS (${ops.length})</div>${ops.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
+          <div ondragover="_onOrgDragOver(event)" ondrop="_onOrgDrop(event,'member','AIR')" style="border:${isAdmin?'2px dashed #fcd34d':'none'};border-radius:8px;padding:${isAdmin?'6px':'0'};min-height:80px"><div style="text-align:center;background:#fef3c7;color:#92400e;padding:5px;border-radius:6px;font-weight:700;font-size:11px;margin-bottom:6px">AIR (${air.length})</div>${air.map(nodeSm).join('')||'<div style="color:var(--g400);font-size:11px;text-align:center">—</div>'}</div>
         </div>
       </div>
     </div>`;
