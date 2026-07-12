@@ -1867,11 +1867,11 @@ function openEditHr(id){
   document.getElementById('hLast').value=ln;
   document.getElementById('hPos').value=h.position||'';
   document.getElementById('hDept').value=h.department||'';
-  document.getElementById('hBirth').value=h.birthDate||'';
+  document.getElementById('hBirth').value=_isoToDdmm(h.birthDate||'');
   document.getElementById('hPhone').value=h.phone||'';
   document.getElementById('hEmail').value=h.email||'';
   document.getElementById('hAddr').value=h.address||'';
-  document.getElementById('hStart').value=h.startDate||'';
+  document.getElementById('hStart').value=_isoToDdmm(h.startDate||'');
   const edu=(Array.isArray(h.education)&&h.education[0])||{};
   document.getElementById('hEduLvl').value=edu.level||'';
   document.getElementById('hEduYear').value=edu.year||'';
