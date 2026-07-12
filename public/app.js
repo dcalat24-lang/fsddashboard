@@ -647,15 +647,18 @@ function toggleNotes(id){
 function noteHistoryRow(d,colspan){
   const list=Array.isArray(d.statusNotes)?d.statusNotes:[];
   if(!list.length) return '';
-  const rows=[...list].reverse().map(n=>{
+  const isAdmin=CU&&CU.role==='admin';
+  const rows=list.map((n,origIdx)=>({n,origIdx})).reverse().map(({n,origIdx})=>{
     const sm=SM[n.status]||SM.head;
     const when=n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    const adm=isAdmin?`<div style="display:flex;gap:4px;flex-shrink:0"><button class="btn btn-ol btn-xs" title="Edit" onclick="docNoteEdit(${d.id},${origIdx})"><i class="fas fa-pen"></i></button><button class="btn btn-d btn-xs" title="Delete" onclick="docNoteDel(${d.id},${origIdx})"><i class="fas fa-trash"></i></button></div>`:'';
     return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-left:3px solid ${sm.color};background:#fff;border-radius:6px;margin-bottom:6px">
       <span class="badge ${sm.cls}" style="flex-shrink:0"><i class="fas ${sm.icon}"></i> ${sm.label}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:12.5px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${n.note||'<em style="color:var(--g400)">(no note)</em>'}</div>
         <div style="font-size:10.5px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${when}${n.by?' · '+n.by:''}</div>
       </div>
+      ${adm}
     </div>`;
   }).join('');
   return `<tr id="nh-${d.id}" style="display:none"><td colspan="${colspan}" style="background:var(--g50);padding:10px 14px">
@@ -666,21 +669,45 @@ function noteHistoryRow(d,colspan){
 function trackNoteHistory(d){
   const list=Array.isArray(d.statusNotes)?d.statusNotes:[];
   if(!list.length) return '';
-  const rows=[...list].reverse().map(n=>{
+  const isAdmin=CU&&CU.role==='admin';
+  const rows=list.map((n,origIdx)=>({n,origIdx})).reverse().map(({n,origIdx})=>{
     const sm=SM[n.status]||SM.head;
     const when=n.at?new Date(n.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    const adm=isAdmin?`<div style="display:flex;gap:4px;flex-shrink:0"><button class="btn btn-ol btn-xs" title="Edit" onclick="docNoteEdit(${d.id},${origIdx})"><i class="fas fa-pen"></i></button><button class="btn btn-d btn-xs" title="Delete" onclick="docNoteDel(${d.id},${origIdx})"><i class="fas fa-trash"></i></button></div>`:'';
     return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-left:3px solid ${sm.color};background:#fff;border-radius:6px;margin-bottom:6px">
       <span class="badge ${sm.cls}" style="flex-shrink:0"><i class="fas ${sm.icon}"></i> ${sm.label}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:12.5px;color:var(--g900);white-space:pre-wrap;word-break:break-word">${n.note||'<em style="color:var(--g400)">(no note)</em>'}</div>
         <div style="font-size:10.5px;color:var(--g500);margin-top:2px"><i class="far fa-clock"></i> ${when}${n.by?' · '+n.by:''}</div>
       </div>
+      ${adm}
     </div>`;
   }).join('');
   return `<div style="margin-top:10px;background:var(--g50);padding:10px;border-radius:var(--r)">
     <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-history"></i> Note History (${list.length})</div>
     ${rows}
   </div>`;
+}
+async function docNoteEdit(id,idx){
+  if(!CU||CU.role!=='admin')return;
+  const d=DB.docs.find(x=>x.id===id);if(!d||!Array.isArray(d.statusNotes)||!d.statusNotes[idx])return;
+  const cur=d.statusNotes[idx];
+  const r=await Swal.fire({title:'Edit Note',input:'textarea',inputValue:cur.note||'',showCancelButton:true,confirmButtonColor:'var(--p)'});
+  if(!r.isConfirmed)return;
+  cur.note=r.value||'';cur.editedAt=new Date().toISOString();cur.editedBy=(CU&&CU.name)||'';
+  if(GAS_URL)await gasPost({action:'saveDocument',doc:d});
+  refDocs&&refDocs();const o=document.getElementById('moDetail');if(o&&o.classList.contains('open')&&typeof openDetail==='function'){/* re-render if function exists */}
+  Swal.fire({icon:'success',title:'Updated',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
+}
+async function docNoteDel(id,idx){
+  if(!CU||CU.role!=='admin')return;
+  const r=await Swal.fire({title:'Delete this note?',icon:'warning',showCancelButton:true,confirmButtonColor:'var(--rd)'});
+  if(!r.isConfirmed)return;
+  const d=DB.docs.find(x=>x.id===id);if(!d||!Array.isArray(d.statusNotes))return;
+  d.statusNotes.splice(idx,1);
+  if(GAS_URL)await gasPost({action:'saveDocument',doc:d});
+  refDocs&&refDocs();
+  Swal.fire({icon:'success',title:'Deleted',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
 }
 function noteToggleBtn(d){
   const n=(Array.isArray(d.statusNotes)?d.statusNotes.length:0);
