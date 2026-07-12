@@ -1653,6 +1653,24 @@ function aocSavePhaseNote(id,key){
   aocPersist(a);refAoc();
   Swal.fire({icon:'success',title:'Note saved',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
 }
+async function aocNoteEdit(id,key,idx){
+  if(!CU||CU.role!=='admin')return;
+  const a=aocList.find(x=>x.id===id);const n=a?.phases?.[key]?.notes?.[idx];if(!n)return;
+  const r=await Swal.fire({title:'Edit Note',input:'textarea',inputValue:n.text||'',showCancelButton:true,confirmButtonColor:'var(--p)'});
+  if(!r.isConfirmed)return;
+  n.text=r.value||'';n.editedAt=Date.now();n.editedBy=CU?.name||'';
+  await aocPersist(a);refAoc();
+  Swal.fire({icon:'success',title:'Updated',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
+}
+async function aocNoteDel(id,key,idx){
+  if(!CU||CU.role!=='admin')return;
+  const r=await Swal.fire({title:'Delete this note?',icon:'warning',showCancelButton:true,confirmButtonColor:'var(--rd)'});
+  if(!r.isConfirmed)return;
+  const a=aocList.find(x=>x.id===id);if(!a?.phases?.[key]?.notes)return;
+  a.phases[key].notes.splice(idx,1);
+  await aocPersist(a);refAoc();
+  Swal.fire({icon:'success',title:'Deleted',toast:true,position:'top-end',showConfirmButton:false,timer:1200});
+}
 function openAocDocSearch(aocId,phaseKey){_aocDocTarget={aocId,phaseKey};document.getElementById('aocDocSrch').value='';refAocDocSearch();openMo('moAocDoc');}
 function refAocDocSearch(){
   const q=(v('aocDocSrch')||'').toLowerCase();
