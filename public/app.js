@@ -1709,10 +1709,12 @@ function _renderHrDashboard(){
   const ops=hrList.filter(h=>_empDeptGroup(h)==='OPS'&&!_isHead(h)&&!_isDeputy(h));
   const air=hrList.filter(h=>_empDeptGroup(h)==='AIR'&&!_isHead(h)&&!_isDeputy(h));
 
+  const isAdmin=CU&&CU.role==='admin';
+  const dnd=(h)=>isAdmin?` draggable="true" ondragstart="_onOrgDragStart(event,${h.id})" title="Drag to move"`:'';
   const nodeSm=(h)=>{const av=h.photo?`<img src="${h.photo}" style="width:34px;height:34px;border-radius:50%;object-fit:cover">`:`<div style="width:34px;height:34px;border-radius:50%;background:var(--g100);color:var(--g600);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">${initials(h.name)}</div>`;
-    return `<div onclick="openHrDetail(${h.id})" style="display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--g200);border-radius:6px;background:#fff;cursor:pointer;margin-bottom:4px">${av}<div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:600;line-height:1.15">${escHtml(h.name)}</div><div style="font-size:10.5px;color:var(--g500);line-height:1.15">${escHtml(h.position||'')}</div></div></div>`;};
+    return `<div${dnd(h)} onclick="openHrDetail(${h.id})" style="display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--g200);border-radius:6px;background:#fff;cursor:${isAdmin?'grab':'pointer'};margin-bottom:4px">${av}<div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:600;line-height:1.15">${escHtml(h.name)}</div><div style="font-size:10.5px;color:var(--g500);line-height:1.15">${escHtml(h.position||'')}</div></div></div>`;};
   const nodeLg=(h)=>{const av=h.photo?`<img src="${h.photo}" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid var(--p)">`:`<div style="width:84px;height:84px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;border:3px solid var(--p)">${initials(h.name)}</div>`;
-    return `<div onclick="openHrDetail(${h.id})" style="text-align:center;cursor:pointer;padding:12px 16px;border:2px solid var(--p);border-radius:12px;background:linear-gradient(135deg,#fff,#f0f7ff);min-width:180px">${av}<div style="font-size:14px;font-weight:700;margin-top:8px">${escHtml(h.name)}</div><div style="font-size:11.5px;color:var(--g600)">${escHtml(h.position||'')}</div></div>`;};
+    return `<div${dnd(h)} onclick="openHrDetail(${h.id})" style="text-align:center;cursor:${isAdmin?'grab':'pointer'};padding:12px 16px;border:2px solid var(--p);border-radius:12px;background:linear-gradient(135deg,#fff,#f0f7ff);min-width:180px">${av}<div style="font-size:14px;font-weight:700;margin-top:8px">${escHtml(h.name)}</div><div style="font-size:11.5px;color:var(--g600)">${escHtml(h.position||'')}</div></div>`;};
 
   body.innerHTML=`
     <!-- Stat Boxes -->
